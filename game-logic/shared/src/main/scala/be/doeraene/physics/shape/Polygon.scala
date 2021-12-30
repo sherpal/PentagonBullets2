@@ -1,0 +1,116 @@
+package be.doeraene.physics.shape
+
+import be.doeraene.physics.Complex
+
+import scala.Ordering.Double.TotalOrdering
+
+trait Polygon extends Shape {
+  val vertices: Vector[Complex]
+  def triangulation: List[Triangle]
+
+  val center: Complex = vertices.sum / vertices.length
+  val radius: Double  = math.sqrt(vertices.map(z => (z - center).modulus2).max)
+
+  def isConvex: Boolean =
+    (for {
+      j <- vertices.indices
+      vertex   = vertices(j)
+      next     = vertices(if (j == vertices.length - 1) 0 else j + 1)
+      previous = vertices(if (j == 0) vertices.length - 1 else j - 1)
+    } yield (vertex - previous).crossProduct(next - vertex))
+      .forall(_ > 0)
+
+  def collides(
+      thisTranslation: Complex,
+      thisRotation: Double,
+      that: Shape,
+      thatTranslation: Complex,
+      thatRotation: Double
+  ): Boolean =
+    boundingBox.intersect(that.boundingBox, thisTranslation, thatTranslation) && {
+      that match {
+        case that: Polygon =>
+          this.triangulation.exists(t =>
+            that.triangulation.exists { thatT =>
+              t.overlap(thatT, thisRotation, thisTranslation, thatRotation, thatTranslation)
+            }
+          )
+        case that: Circle =>
+          this.triangulation.exists(t =>
+            t.overlapDisk(
+              that,
+              thatTranslation,
+              thisRotation,
+              thisTranslation
+            )
+          )
+      }
+    }
+
+  val boundingBox: BoundingBox =
+    BoundingBox(center.re - radius, center.im - radius, center.re + radius, center.im + radius)
+
+  def intersectSegment(translation: Complex, rotation: Double, z1: Complex, z2: Complex): Boolean =
+    triangulation.exists { triangle =>
+      val actualVertices = triangle.vertices.map(_ * Complex.rotation(rotation) + translation)
+      triangle.contains(z1.re, z1.im, rotation, translation) ||
+      triangle.contains(z2.re, z2.im, rotation, translation) ||
+      actualVertices
+        .zip(actualVertices.tail :+ actualVertices.head)
+        .exists { case (w1, w2) =>
+          Shape.intersectingSegments(w1.re, w1.im, w2.re, w2.im, z1.re, z1.im, z2.re, z2.im)
+        }
+    }
+
+  def contains(point: Complex): Boolean =
+    boundingBox.contains(point) && triangulation.exists(_.contains(point.re, point.im))
+
+  def contains(point: Complex, translation: Complex, rotation: Double): Boolean =
+    boundingBox.contains(point - translation) && triangulation
+      .exists(_.contains(point.re, point.im, rotation, translation))
+
+  def edges: Vector[Segment] = vertices.zip(vertices.tail :+ vertices(0)).map(Segment(_, _))
+
+  def translateAndRotationVertices(translation: Complex, rotation: Double): Vector[Complex] =
+    vertices.map(_.rotate(rotation) + translation)
+
+  /** Returns the polygon where all the edges are translated radius away to the exterior.
+    */
+  def inflate(radius: Double): Polygon = Polygon(inflateWithoutPolygon(radius))
+
+  /** Returns the vertices where all the edges are translated radius away to the exterior.
+    */
+  def inflateWithoutPolygon(radius: Double): Vector[Complex] = {
+    val triplets = vertices.indices
+      .map(j =>
+        (
+          vertices(j),
+          vertices(if (j == vertices.length - 1) 0 else j + 1),
+          vertices(if (j == 0) vertices.length - 1 else j - 1)
+        )
+      )
+      .toVector
+    for {
+      (vertex, next, previous) <- triplets
+    } yield {
+      val dir1    = (vertex - previous).normalized
+      val dir2    = (next - vertex).normalized
+      val vertex1 = vertex - radius * dir1.orthogonal
+      val vertex2 = vertex - radius * dir2.orthogonal
+      Shape.linesIntersection(
+        vertex1,
+        vertex2,
+        dir1,
+        dir2
+      )
+    }
+  }
+
+  override def toString: String = vertices.mkString("Polygon(", ", ", ")")
+
+}
+
+object Polygon {
+  def apply(vertices: Vector[Complex], convex: Boolean = false): Polygon =
+    if (convex) new ConvexPolygon(vertices) else new NonConvexPolygon(vertices)
+}
