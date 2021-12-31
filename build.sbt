@@ -35,3 +35,9 @@ lazy val `game-logic` = crossProject(JSPlatform, JVMPlatform)
     //libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb_sjs1_2.13" % "2.3.0",
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+
+lazy val `server` = project
+  .in(file("./server"))
+  .settings(commonSettings)
+  .settings(BackendDependencies.addDependencies())
+  .dependsOn(`game-logic`.jvm)
