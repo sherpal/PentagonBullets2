@@ -1,7 +1,7 @@
 package gamelogic.entities.concreteentities
 
 import gamelogic.buffs.Buff.ResourceIdentifier
-import gamelogic.buffs.{Buff, PassiveBuff}
+import gamelogic.buffs.{Buff, SimplePassiveBuff}
 import gamelogic.entities.Entity
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.gamestate.gameactions.{
@@ -14,7 +14,7 @@ import gamelogic.utils.IdGeneratorContainer
 
 /** While a Shield is active on a Player, he or she does not take any damage.
   */
-final case class Shield(buffId: Buff.Id, appearanceTime: Long, bearerId: Entity.Id) extends PassiveBuff {
+final case class Shield(buffId: Buff.Id, appearanceTime: Long, bearerId: Entity.Id) extends SimplePassiveBuff {
 
   def resourceIdentifier: ResourceIdentifier = Buff.shield
 

@@ -1,14 +1,14 @@
 package gamelogic.gamestate.gameactions
 
 import be.doeraene.physics.Complex
-import gamelogic.entities.ActionSource
+import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.gamestate.statetransformers.GameStateTransformer
 import gamelogic.gamestate.{GameAction, GameState}
 
 final case class FireLaser(
     actionId: GameAction.Id,
     time: Long,
-    ownerId: Long,
+    ownerId: Entity.Id,
     laserVertices: Vector[Complex],
     actionSource: ActionSource
 ) extends GameAction {

@@ -52,6 +52,16 @@ object Buff {
 
   opaque type Id = Long
 
+  object Id:
+    extension (id: Id) def toLong: Long = id
+
+    def apply(long: Long): Id = long
+
+    def initial: Id = 0L
+
+  def nextBuffId()(using idGeneratorContainer: IdGeneratorContainer): Id =
+    idGeneratorContainer.buffIdGenerator()
+
   opaque type ResourceIdentifier = Int
 
   private var lastId: ResourceIdentifier   = 0

@@ -52,6 +52,8 @@ trait GameAction extends Ordered[GameAction] {
 
   def setId(newId: GameAction.Id): GameAction
 
+  def changeTime(newTime: Long): GameAction
+
 }
 
 object GameAction {

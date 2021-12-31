@@ -1,10 +1,11 @@
 package gamelogic.abilities
 
 import gamelogic.entities.Resource.ResourceAmount
-import gamelogic.entities.{Entity, Resource}
+import gamelogic.entities.{Entity, Resource, WithAbilities}
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.utils.IdGeneratorContainer
 import io.circe.{Decoder, Encoder, Json}
+
 import scala.annotation.tailrec
 
 /** A [[gamelogic.abilities.Ability]] represents an action that an entity can take besides moving.
@@ -29,11 +30,6 @@ trait Ability {
   /** Duration (in millis) before this ability */
   def cooldown: Long
 
-  /** Duration (in millis) the caster needs to stay still before the ability is cast Note: can be 0 for instant casting
-    * time, in which case it can be activated while moving.
-    */
-  def castingTime: Long
-
   /** Id of the entity that cast the spell.
     */
   def casterId: Entity.Id
@@ -52,7 +48,7 @@ trait Ability {
     */
   def createActions(
       gameState: GameState
-  )(implicit idGeneratorContainer: IdGeneratorContainer): List[GameAction]
+  )(using IdGeneratorContainer): List[GameAction]
 
   /** Change the time and id of this ability, without changing the rest. */
   def copyWithNewTimeAndId(newTime: Long, newId: Ability.UseId): Ability
@@ -67,6 +63,12 @@ trait Ability {
     *   Some error message when the ability can't be cast at that time, with that [[GameState]].
     */
   def canBeCast(gameState: GameState, time: Long): Option[String]
+
+  def playerMustBeAlive(gameState: GameState, playerId: Entity.Id): Option[String] =
+    gameState.playerById(playerId).toLeft(s"Player with id $playerId is not alive").toOption
+
+  def isUp(caster: WithAbilities, now: Long, allowedError: Long = 0): Boolean =
+    now - time + allowedError >= cooldown / caster.allowedAbilities.count(_ == abilityId)
 
   protected def canBeCastAll(gameState: GameState, time: Long)(
       checks: (GameState, Long) => Option[String]*
@@ -110,7 +112,16 @@ object Ability {
 
   def abilityIdCount: AbilityId = lastAbilityId
 
-  /** Global cooldown. Not sure if this should be there... */
-  @inline def gcd = 200L
+  val activateShieldId: AbilityId        = nextAbilityId()
+  val bigBulletId: AbilityId             = nextAbilityId()
+  val craftGunTurretId: AbilityId        = nextAbilityId()
+  val createBarrierId: AbilityId         = nextAbilityId()
+  val createBulletAmplifierId: AbilityId = nextAbilityId()
+  val createHealingZoneId: AbilityId     = nextAbilityId()
+  val laserId: AbilityId                 = nextAbilityId()
+  val launchSmashBulletId: AbilityId     = nextAbilityId()
+  val putBulletGlue: AbilityId           = nextAbilityId()
+  val tripleBulletId: AbilityId          = nextAbilityId()
+  val teleportationId: AbilityId         = nextAbilityId()
 
 }

@@ -1,14 +1,14 @@
 package gamelogic.entities.concreteentities
 
 import gamelogic.buffs.Buff.ResourceIdentifier
-import gamelogic.buffs.{Buff, PassiveBuff}
+import gamelogic.buffs.{Buff, SimplePassiveBuff}
 import gamelogic.entities.Entity
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.gamestate.gameactions.NewBullet
 import gamelogic.utils.IdGeneratorContainer
 
 final case class BulletGlue(buffId: Buff.Id, appearanceTime: Long, bearerId: Entity.Id, teamId: Int)
-    extends PassiveBuff {
+    extends SimplePassiveBuff {
 
   def resourceIdentifier: ResourceIdentifier = Buff.bulletGlue
 

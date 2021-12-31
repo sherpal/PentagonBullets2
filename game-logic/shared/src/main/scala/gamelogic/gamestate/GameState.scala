@@ -14,7 +14,7 @@ final class GameState(
     val gameBounds: Polygon,
     val castingEntityInfo: Map[Entity.Id, EntityCastingInfo],
     val passiveBuffs: Map[Entity.Id, Map[Buff.Id, PassiveBuff]],
-    //val tickerBuffs: Map[Entity.Id, Map[Buff.Id, TickerBuff]],
+    val tickerBuffs: Map[Entity.Id, Map[Buff.Id, TickerBuff]],
     val entities: Map[Entity.Id, Entity],
     val deadPlayers: Map[Entity.Id, Player]
 ) {
@@ -26,7 +26,7 @@ final class GameState(
       gameBounds: Polygon = gameBounds,
       castingEntityInfo: Map[Entity.Id, EntityCastingInfo] = castingEntityInfo,
       passiveBuffs: Map[Entity.Id, Map[Buff.Id, PassiveBuff]] = passiveBuffs,
-//            tickerBuffs: Map[Entity.Id, Map[Buff.Id, TickerBuff]]   = tickerBuffs,
+      tickerBuffs: Map[Entity.Id, Map[Buff.Id, TickerBuff]] = tickerBuffs,
       entities: Map[Entity.Id, Entity] = entities,
       deadPlayers: Map[Entity.Id, Player] = deadPlayers
   ): GameState = GameState(
@@ -36,7 +36,7 @@ final class GameState(
     gameBounds,
     castingEntityInfo,
     passiveBuffs,
-//    tickerBuffs,
+    tickerBuffs,
     entities,
     deadPlayers
   )
@@ -137,5 +137,13 @@ final class GameState(
   def withHealingZone(zoneId: Entity.Id, time: Long, zone: HealingZone): GameState = withEntity(zoneId, time, zone)
 
   def withPlayer(playerId: Entity.Id, time: Long, player: Player): GameState = withEntity(playerId, time, player)
+
+  def collidingPlayerObstacles(player: Player): Iterable[Body] = collidingPlayerObstacles(player.team)
+
+  def collidingPlayerObstacles(playerTeam: Int): Iterable[Body] =
+    entities.values.collect {
+      case barrier: Barrier if barrier.teamId != playerTeam => barrier
+      case obstacle: Obstacle                               => obstacle
+    }
 
 }

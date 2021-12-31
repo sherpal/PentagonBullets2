@@ -1,14 +1,27 @@
 package gamelogic.entities
 
-/**
-  * An [[ActionSource]] represents the kind thing that was responsible for an action.
-  * [[ActionSource]] can be some physical or magical damage, but it can also be a healing power.
+/** An ActionSource determines what created a GameAction in the first place.
+  *
+  * It can be
+  *   - the player, for example UpdatePlayerPos, NewBullet or UseAbilityAction
+  *   - the server, for collisions, UpdatePlayerPos when player needs to be replaced...
+  *   - an Ability, for example the NewBullets of a MultiShot, the UpdatePlayerPos of a Teleportation
+  *   - a GunTurret, for NewBullets
   */
 sealed trait ActionSource
 
 object ActionSource {
 
-  case object Physical extends ActionSource
-  case object Magical extends ActionSource
+  case object PlayerSource extends ActionSource
+  case object ServerSource extends ActionSource
+  case object AbilitySource extends ActionSource
+  case object GunTurretSource extends ActionSource
+
+  val stringToActionSource: Map[String, ActionSource] = List(
+    PlayerSource,
+    ServerSource,
+    AbilitySource,
+    GunTurretSource
+  ).map(source => source.toString -> source).toMap
 
 }

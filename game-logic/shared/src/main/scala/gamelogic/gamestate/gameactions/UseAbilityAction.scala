@@ -15,12 +15,7 @@ final case class UseAbilityAction(
 ) extends GameAction {
 
   def createGameStateTransformer(gameState: GameState): GameStateTransformer =
-    GameStateTransformer.maybe(
-      gameState
-        .entityByIdAs[WithAbilities](ability.casterId)
-        .map(_.useAbility(ability.copyWithNewTimeAndId(time, useId)))
-        .map(WithEntity(_, time))
-    )
+    TransformEntity[WithAbilities](ability.casterId, time, _.useAbility(ability.copyWithNewTimeAndId(time, useId)))
 
   override def canHappen(gameState: GameState): Boolean = gameState.isPlayerAlive(ability.casterId)
 

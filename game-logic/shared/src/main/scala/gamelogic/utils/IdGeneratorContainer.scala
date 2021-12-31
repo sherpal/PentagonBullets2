@@ -1,6 +1,7 @@
 package gamelogic.utils
 
 import gamelogic.abilities.Ability
+import gamelogic.buffs.Buff
 import gamelogic.entities.Entity
 import gamelogic.gamestate.GameAction
 
@@ -9,7 +10,8 @@ import gamelogic.gamestate.GameAction
 final case class IdGeneratorContainer(
     entityIdGenerator: EntityIdGenerator,
     gameActionIdGenerator: GameActionIdGenerator,
-    abilityUseIdGenerator: AbilityUseIdGenerator
+    abilityUseIdGenerator: AbilityUseIdGenerator,
+    buffIdGenerator: BuffIdGenerator
 )
 
 object IdGeneratorContainer {
@@ -17,7 +19,8 @@ object IdGeneratorContainer {
   def initialIdGeneratorContainer: IdGeneratorContainer = IdGeneratorContainer(
     new EntityIdGenerator(Entity.Id.initial),
     new GameActionIdGenerator(GameAction.Id.initial),
-    new AbilityUseIdGenerator(Ability.UseId.initial)
+    new AbilityUseIdGenerator(Ability.UseId.initial),
+    new BuffIdGenerator(Buff.Id.initial)
   )
 
 }

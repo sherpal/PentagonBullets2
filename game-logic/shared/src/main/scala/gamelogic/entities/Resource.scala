@@ -21,26 +21,33 @@ object Resource {
     def max(x: Double): ResourceAmount = ResourceAmount(x max amount, resourceType)
     def min(x: Double): ResourceAmount = ResourceAmount(x min amount, resourceType)
 
-    /**
-      * Returns a [[ResourceAmount]] whose amount is between 0 and `maxValue`.
+    /** Returns a [[ResourceAmount]] whose amount is between 0 and `maxValue`.
       */
     def clampTo(maxValue: Double): ResourceAmount = ResourceAmount((amount max 0) min maxValue, resourceType)
 
+    /** Partial ordering of the [[ResourceAmount]]
+      *
+      * The rule is that: if both [[ResourceAmount]] have the same [[Resource]], they are compared according to their
+      * amounts if exactly one of the [[ResourceAmount]]s is a [[NoResource]], it is smaller otherwise, they can't be
+      * compared
+      */
     def tryCompareTo[B >: ResourceAmount](that: B)(implicit evidence$1: AsPartiallyOrdered[B]): Option[Int] =
       that match {
         case that: ResourceAmount if that.resourceType == this.resourceType => Some(this.amount compare that.amount)
-        case _                                                              => None
+        case that: ResourceAmount if that.resourceType != NoResource && this.resourceType == NoResource => Some(1)
+        case that: ResourceAmount if that.resourceType == NoResource && this.resourceType != NoResource => Some(-1)
+        case _                                                                                          => None
       }
   }
 
   case object Mana extends Resource {
-    def colour: RGBColour = RGBColour.fromIntColour(0x0000FF)
+    def colour: RGBColour = RGBColour.fromIntColour(0x0000ff)
   }
   case object Energy extends Resource {
-    def colour: RGBColour = RGBColour.fromIntColour(0xFFFF00)
+    def colour: RGBColour = RGBColour.fromIntColour(0xffff00)
   }
   case object Rage extends Resource {
-    def colour: RGBColour = RGBColour.fromIntColour(0xFF0000)
+    def colour: RGBColour = RGBColour.fromIntColour(0xff0000)
   }
 
   case object NoResource extends Resource {
@@ -48,6 +55,7 @@ object Resource {
   }
 
   val noResourceAmount: ResourceAmount = ResourceAmount(0.0, NoResource)
+  val zero: ResourceAmount             = noResourceAmount
 
   final val resources: Map[String, Resource] = Map(
     Mana.toString -> Mana,

@@ -4,7 +4,7 @@ import gamelogic.entities.ActionSource
 import gamelogic.gamestate.statetransformers.{GameEnds, GameStateTransformer}
 import gamelogic.gamestate.{GameAction, GameState}
 
-final case class GameEndedAction(
+final case class GameEnded(
     actionId: GameAction.Id,
     time: Long,
     actionSource: ActionSource

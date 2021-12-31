@@ -10,7 +10,9 @@ import gamelogic.entities.Resource.ResourceAmount
 trait WithAbilities extends WithPosition {
 
   /** List of [[gamelogic.abilities.Ability]] that is entity has. */
-  def abilities: Set[Ability.AbilityId]
+  def allowedAbilities: List[Ability.AbilityId]
+
+  final def abilities: Set[Ability.AbilityId] = allowedAbilities.toSet
 
   /** Copies this [[WithAbilities]] by changing it after using the ability. This would also involve reduce the value
     * `resourceAmount`.
