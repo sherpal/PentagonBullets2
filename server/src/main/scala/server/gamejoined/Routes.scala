@@ -19,8 +19,8 @@ final class Routes()(using system: ActorSystem[_]) {
 
   private val gameJoinedRef = system.systemActorOf(GameJoined(), "GameJoined")
 
-  def asRoute: Route = pathPrefix("game-joined") {
-    path("ws") {
+  def asRoute: Route =
+    path("ws" / "game-joined") {
       parameter("player-name").map(name => PlayerName(name)).apply { (playerName: PlayerName) =>
         handleWebSocketMessages(
           webSocketService(
@@ -39,7 +39,6 @@ final class Routes()(using system: ActorSystem[_]) {
         )
       }
     }
-  }
 
 }
 

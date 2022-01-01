@@ -43,7 +43,7 @@ object GameInfoKeeper {
           context.self ! SendGameInfoTo(respondTo = notificationRef, identity)
           Behaviors.same
         case sendTo: SendGameInfoTo[_] =>
-          sendTo.send(gameInfo)
+          sendTo.send(gameInfo.obfuscated)
           Behaviors.same
         case NewPlayer(playerName) =>
           context.self ! SendGameInfo

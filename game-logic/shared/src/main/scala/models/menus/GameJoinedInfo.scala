@@ -24,6 +24,8 @@ final case class GameJoinedInfo(players: Map[PlayerName, PlayerInfo]) {
     players = players - playerName
   )
 
+  def obfuscated: GameJoinedInfo = copy(players = players.map((key, value) => (key, value.obfuscated)))
+
 }
 
 object GameJoinedInfo {
