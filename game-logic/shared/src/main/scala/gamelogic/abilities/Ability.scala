@@ -98,16 +98,23 @@ object Ability {
 
   opaque type UseId = Long
 
-  object UseId:
+  object UseId {
     extension (useId: UseId) @inline def toLong: Long = useId: Long
 
     def apply(long: Long): UseId = long
 
     def initial: UseId = 0L
+  }
 
   opaque type AbilityId = Int
 
+  object AbilityId {
+    extension (id: AbilityId) def toInt: Int = id: Int
+
+    def fromInt(intId: Int): Option[AbilityId] = Option.when(intId <= lastAbilityId && 0 <= intId)(intId)
+  }
   private var lastAbilityId: AbilityId   = 0
+  def maxAbilityId: AbilityId            = lastAbilityId
   private def nextAbilityId(): AbilityId = { lastAbilityId += 1; lastAbilityId }
 
   def abilityIdCount: AbilityId = lastAbilityId

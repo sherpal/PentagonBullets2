@@ -1,10 +1,12 @@
 package server
 
+import actors.gamejoined.GameJoined
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.*
 import akka.http.scaladsl.server.Directives.*
+import server.gamejoined.Routes
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.io.StdIn
@@ -28,7 +30,9 @@ object Server {
         getFromResource(("public" +: segments).mkString("/"))
     } ~ getFromResource("public/index.html")
 
-    val routes = path("hello")(complete(StatusCodes.OK, "hello")) ~ staticRoute
+    val gameJoinedRoutes = new Routes().asRoute
+
+    val routes = gameJoinedRoutes ~ staticRoute
 
     val bindingFuture = Http()
       .newServerAt(host, port)
