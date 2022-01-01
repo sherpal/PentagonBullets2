@@ -9,6 +9,7 @@ temp
 .idea
 
 frontend/node_modules
+cypress/node_modules
 game-server-launcher/node_modules
 game-server-launcher/build
 
@@ -37,6 +38,7 @@ logs
 *.map
 
 server/src/main/resources/public
+cypress/cypress/integration/scala
 
 frontend/src/main/resources/.sass-cache
 #frontend/src/main/resources/index.css

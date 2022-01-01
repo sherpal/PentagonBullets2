@@ -42,6 +42,17 @@ lazy val `server` = project
   .settings(BackendDependencies.addDependencies())
   .dependsOn(`game-logic`.jvm)
 
+lazy val cypress = project
+  .in(file("./cypress"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(commonSettings)
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.1.0"
+  )
+  .dependsOn(`game-logic`.js)
+
 lazy val frontend = project
   .in(file("./frontend"))
   .enablePlugins(ScalablyTypedConverterExternalNpmPlugin)
@@ -69,3 +80,18 @@ lazy val frontend = project
     scalaJSUseMainModuleInitializer := true
   )
   .dependsOn(`game-logic`.js)
+
+val compileCypress =
+  taskKey[Unit]("fastOptJS and copy-paste inside cypress directory.")
+
+compileCypress := {
+  val target = (cypress / Compile / fastOptJS).value.data
+
+  IO.copyFile(
+    target,
+    baseDirectory.value / "cypress" / "cypress" / "integration" / "scala" / target.getName,
+    CopyOptions().withOverwrite(true)
+  )
+
+  println("[info] Done.")
+}
