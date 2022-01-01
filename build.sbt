@@ -41,3 +41,31 @@ lazy val `server` = project
   .settings(commonSettings)
   .settings(BackendDependencies.addDependencies())
   .dependsOn(`game-logic`.jvm)
+
+lazy val frontend = project
+  .in(file("./frontend"))
+  .enablePlugins(ScalablyTypedConverterExternalNpmPlugin)
+  .enablePlugins(ScalaJSPlugin)
+  .settings(commonSettings)
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= List(
+      "com.raquo" %%% "laminar" % "0.13.0"
+    ),
+    stUseScalaJsDom := false,
+    stIgnore := List(
+      "@pixi/constants",
+      "@pixi/core",
+      "@pixi/math",
+      "@pixi/settings",
+      "@pixi/utils",
+      "tailwindcss"
+    ),
+    externalNpm := {
+      scala.sys.process.Process("npm", baseDirectory.value).!
+      baseDirectory.value
+    },
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+    scalaJSUseMainModuleInitializer := true
+  )
+  .dependsOn(`game-logic`.js)

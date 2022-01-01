@@ -1,0 +1,71 @@
+.arrow-highlight {
+  position: relative;
+  margin: 0 0.5em;
+  padding: 0 0.2em;
+}
+.arrow-highlight:before {
+  content: "";
+  z-index: -1;
+  left: -0.5em;
+  top: 0.1em;
+  border-width: 0.5em;
+  border-style: solid;
+  border-color: orange;
+  position: absolute;
+  width: calc(100% - 0.5em);
+  border-left-color: transparent;
+}
+.arrow-highlight:after {
+  content: "";
+  z-index: -1;
+  right: 0;
+  top: 0.1em;
+  border-width: 0.5em;
+  border-style: solid;
+  border-color: orange;
+  position: absolute;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  transform: rotate(180deg);
+  transform-origin: center right;
+}
+
+fieldset {
+  text-decoration: none;
+}
+
+.with-border {
+  border: 1px solid black;
+}
+
+.game-state-table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 10px;
+}
+
+.game-state-table th {
+  background-color: black;
+  color: white;
+}
+
+.game-state-table .black-square {
+  background-color: #e6ffe6;
+}
+
+.game-state-table .row-index {
+  background-color: black;
+  color: white;
+  padding-right: 5px;
+  padding-left: 5px;
+  font-weight: bold;
+}
+
+.TeamBlue {
+  color: blue;
+}
+
+.TeamRed {
+  color: red;
+}
