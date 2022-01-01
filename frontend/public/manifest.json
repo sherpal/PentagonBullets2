@@ -1,6 +1,6 @@
 {
-  "short_name": "Mad",
-  "name": "Mad, the game",
+  "short_name": "PB",
+  "name": "Pentagon Bullet, the game",
   "icons": [],
   "start_url": "./index.html",
   "display": "standalone",
