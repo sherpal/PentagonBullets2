@@ -13,6 +13,7 @@ object ConnectionKeeper {
       ref: ActorRef[ConnectionActor.Command]
   ) extends Command
   case class ConnectionDied(playerName: PlayerName) extends Command
+  case class GameStarts(gameJoinedInfo: GameJoinedInfo, gameKey: java.util.UUID) extends Command
 
   def apply(parent: ActorRef[GameJoined.Command]): Behavior[Command] = receiver(parent, Map.empty)
 
@@ -36,6 +37,12 @@ object ConnectionKeeper {
       case ConnectionDied(playerName) =>
         context.log.info(s"Connection died: ${playerName.name}")
         receiver(parent, connectedChildren = connectedChildren - playerName)
+      case GameStarts(gameJoinedInfo, gameKey) =>
+        connectedChildren.foreach { (playerName, ref) =>
+          val info = gameJoinedInfo.players(playerName) // cowboy style
+          ref ! ConnectionActor.GameStarts(info, gameKey)
+        }
+        Behaviors.same
     }
   }
 }

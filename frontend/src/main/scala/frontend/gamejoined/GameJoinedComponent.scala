@@ -112,6 +112,9 @@ object GameJoinedComponent {
       child <-- gameInfoEvents.map(_.isLeader(playerName)).map {
         case true  => startGameButton
         case false => emptyNode
+      },
+      child <-- gameStartsEvents.map { case ServerToClient.GameStarts(info, gameKey) =>
+        div(info.toString, br(), gameKey.toString)
       }
     )
   }

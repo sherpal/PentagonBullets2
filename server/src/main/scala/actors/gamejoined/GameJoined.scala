@@ -12,7 +12,7 @@ object GameJoined {
   def apply(): Behavior[Command] = Behaviors.setup[Command] { implicit context =>
     val connectionKeeper = context.spawn(ConnectionKeeper(context.self), "ConnectionKeeper")
     val notification     = connectionKeeper.contramap[GameJoinedInfo](ConnectionKeeper.GameInfoUpdate.apply)
-    val gameInfoKeeper   = context.spawn(GameInfoKeeper(notification), "GameInfoKeeper")
+    val gameInfoKeeper   = context.spawn(GameInfoKeeper(notification, connectionKeeper), "GameInfoKeeper")
 
     Behaviors.receiveMessage {
       case forConnectionKeeper: ConnectionKeeper.Command =>

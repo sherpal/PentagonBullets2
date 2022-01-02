@@ -58,15 +58,25 @@ object GameInfoKeeper {
       gameJoinedInfo.withoutPlayer(playerName)
   }
 
-  def apply(notificationRef: ActorRef[GameJoinedInfo]): Behavior[Command] = Behaviors.setup[Command] { context =>
+  def apply(
+      notificationRef: ActorRef[GameJoinedInfo],
+      connectionKeeper: ActorRef[ConnectionKeeper.GameStarts]
+  ): Behavior[Command] = Behaviors.setup[Command] { context =>
     context.log.info("Setup")
-    clean(notificationRef)
+    clean(notificationRef, connectionKeeper)
   }
 
-  private def clean(notificationRef: ActorRef[GameJoinedInfo]) =
-    receiver(Pointed[GameJoinedInfo].unit, notificationRef)
+  private def clean(
+      notificationRef: ActorRef[GameJoinedInfo],
+      connectionKeeper: ActorRef[ConnectionKeeper.GameStarts]
+  ) =
+    receiver(Pointed[GameJoinedInfo].unit, notificationRef, connectionKeeper)
 
-  private def receiver(gameInfo: GameJoinedInfo, notificationRef: ActorRef[GameJoinedInfo]): Behavior[Command] =
+  private def receiver(
+      gameInfo: GameJoinedInfo,
+      notificationRef: ActorRef[GameJoinedInfo],
+      connectionKeeper: ActorRef[ConnectionKeeper.GameStarts]
+  ): Behavior[Command] =
     Behaviors.receive { (context, command) =>
       command match {
         case SendGameInfo =>
@@ -77,12 +87,12 @@ object GameInfoKeeper {
           Behaviors.same
         case updater: GameInfoUpdater =>
           context.self ! SendGameInfo
-          receiver(updater.updateGameInfo(gameInfo), notificationRef)
+          receiver(updater.updateGameInfo(gameInfo), notificationRef, connectionKeeper)
         case StartGame(requester) =>
           if gameInfo.isLeader(requester) && gameInfo.canStart then
-            // todo: move to game
             context.log.info("Game starting...")
-            clean(notificationRef)
+            connectionKeeper ! ConnectionKeeper.GameStarts(gameInfo, java.util.UUID.randomUUID())
+            clean(notificationRef, connectionKeeper)
           else
             context.log.warn(
               "Received StartGame request but either the game can't start, or it was not from the leader."
