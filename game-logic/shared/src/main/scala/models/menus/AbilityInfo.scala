@@ -7,17 +7,11 @@ final case class AbilityInfo(id: Ability.AbilityId, name: String, description: S
 
 object AbilityInfo {
 
-  /** val craftGunTurretId: AbilityId = nextAbilityId() val createBarrierId: AbilityId = nextAbilityId() val
-    * createBulletAmplifierId: AbilityId = nextAbilityId() val createHealingZoneId: AbilityId = nextAbilityId() val
-    * laserId: AbilityId = nextAbilityId() val launchSmashBulletId: AbilityId = nextAbilityId() val putBulletGlue:
-    * AbilityId = nextAbilityId() val tripleBulletId: AbilityId = nextAbilityId() val teleportationId: AbilityId =
-    * nextAbilityId()
-    */
   val allAbilityInfo: List[AbilityInfo] = List(
     AbilityInfo(
       bigBulletId,
       "Big Bullet",
-      "Shoots a big bullet to your enemy, that goes twice as fast and deals three times as much damage as a normal bullet."
+      "Shoots a big bullet towards your mouse's position, that goes twice as fast and deals three times as much damage as a normal bullet."
     ),
     AbilityInfo(
       craftGunTurretId,
@@ -54,7 +48,9 @@ object AbilityInfo {
     AbilityInfo(teleportationId, "Teleportation", "Teleports yourself instantly to your mouse's position.")
   ).sortBy(_.name)
 
+  lazy val abilityInfoById: Map[Ability.AbilityId, AbilityInfo] = allAbilityInfo.map(info => info.id -> info).toMap
+
   def abilityInfoFromId(id: Ability.AbilityId): AbilityInfo =
-    allAbilityInfo.find(_.id == id).get // get is safe because AbilityIds can't be created.
+    abilityInfoById(id) // call is safe because AbilityIds can't be created.
 
 }

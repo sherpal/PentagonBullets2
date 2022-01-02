@@ -7,6 +7,7 @@ import models.syntax.Pointed
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.util.Timeout
 import gamelogic.abilities.Ability
+import gamelogic.entities.Entity.TeamId
 
 import scala.concurrent.Future
 
@@ -20,19 +21,42 @@ object GameInfoKeeper {
   case class SendGameInfoTo[T](respondTo: ActorRef[T], adapter: GameJoinedInfo => T) extends Command:
     def send(gameJoinedInfo: GameJoinedInfo): Unit = respondTo ! adapter(gameJoinedInfo)
 
-  case class NewPlayer(playerName: PlayerName) extends Command
+  sealed trait GameInfoUpdater extends Command {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo
+  }
 
-  /** Sent to this actor to update (or add) the given [[PlayerInfo]] */
-  case class UpdatePlayerAbility(playerName: PlayerName, abilityId: Ability.AbilityId) extends Command
+  /** Sent to this actor to add a new player to the game. */
+  case class NewPlayer(playerName: PlayerName) extends GameInfoUpdater {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo =
+      gameJoinedInfo.withPlayer(PlayerInfo.init(playerName, gameJoinedInfo.firstUnusedTeamId))
+  }
 
-  case class UpdatePlayerReadyStatus(playerName: PlayerName, readyStatus: Boolean) extends Command
+  /** Sent to this actor to update the [[Ability.AbilityId]] of the given player. */
+  case class UpdatePlayerAbility(playerName: PlayerName, abilityId: Ability.AbilityId) extends GameInfoUpdater {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo =
+      gameJoinedInfo.updateAbility(playerName, abilityId)
+  }
+
+  /** Sent to this actor to update the ready status of the given player. */
+  case class UpdatePlayerReadyStatus(playerName: PlayerName, readyStatus: Boolean) extends GameInfoUpdater {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo =
+      gameJoinedInfo.updateReadyStatus(playerName, readyStatus)
+  }
+
+  /** Sent to this actor to update the [[TeamId]] of the given player. */
+  case class UpdatePlayerTeamId(playerName: PlayerName, teamId: TeamId) extends GameInfoUpdater {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo =
+      gameJoinedInfo.updateTeamId(playerName, teamId)
+  }
 
   /** Sent to this actor to remove the given [[PlayerName]] */
-  case class RemovePlayer(playerName: PlayerName) extends Command
+  case class RemovePlayer(playerName: PlayerName) extends GameInfoUpdater {
+    def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo =
+      gameJoinedInfo.withoutPlayer(playerName)
+  }
 
   def apply(notificationRef: ActorRef[GameJoinedInfo]): Behavior[Command] = Behaviors.setup[Command] { context =>
     context.log.info("Setup")
-
     receiver(Pointed[GameJoinedInfo].unit, notificationRef)
   }
 
@@ -45,18 +69,9 @@ object GameInfoKeeper {
         case sendTo: SendGameInfoTo[_] =>
           sendTo.send(gameInfo.obfuscated)
           Behaviors.same
-        case NewPlayer(playerName) =>
+        case updater: GameInfoUpdater =>
           context.self ! SendGameInfo
-          receiver(gameInfo.withPlayer(PlayerInfo.init(playerName)), notificationRef)
-        case UpdatePlayerAbility(playerName, abilityId) =>
-          context.self ! SendGameInfo
-          receiver(gameInfo.updateAbility(playerName, abilityId), notificationRef)
-        case UpdatePlayerReadyStatus(playerName, readyStatus) =>
-          context.self ! SendGameInfo
-          receiver(gameInfo.updateReadyStatus(playerName, readyStatus), notificationRef)
-        case RemovePlayer(playerName) =>
-          context.self ! SendGameInfo
-          receiver(gameInfo.withoutPlayer(playerName), notificationRef)
+          receiver(updater.updateGameInfo(gameInfo), notificationRef)
       }
     }
 

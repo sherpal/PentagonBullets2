@@ -5,24 +5,42 @@ import akka.actor.typed.{ActorRef, Behavior}
 import models.menus.*
 import server.gamejoined.Routes
 import gamelogic.abilities.Ability
-import models.gamecodecs.CirceCodecs._
+import gamelogic.entities.Entity.TeamId
+import models.gamecodecs.CirceCodecs.*
 
 object ConnectionActor {
 
   sealed trait Command
-  sealed trait FromExternalWorld extends Command
+  sealed trait FromExternalWorld extends Command {
+    def forward(playerName: PlayerName): GameInfoKeeper.Command
+  }
   case class GameJoinedInfoUpdated(gameJoinedInfo: GameJoinedInfo) extends Command
   case class PlayerNameAlreadyConnected() extends Command
   case class Connected() extends Command
-  case class UpdateAbility(abilityId: Ability.AbilityId) extends FromExternalWorld
-  case class UpdateReadyStatus(ready: Boolean) extends FromExternalWorld
-  case class Disconnect() extends FromExternalWorld
+  case class UpdateAbility(abilityId: Ability.AbilityId) extends FromExternalWorld {
+    def forward(playerName: PlayerName): GameInfoKeeper.Command =
+      GameInfoKeeper.UpdatePlayerAbility(playerName, abilityId)
+  }
+  case class UpdateReadyStatus(ready: Boolean) extends FromExternalWorld {
+    override def forward(playerName: PlayerName): GameInfoKeeper.Command =
+      GameInfoKeeper.UpdatePlayerReadyStatus(playerName, ready)
+  }
+  case class UpdateTeamId(teamId: TeamId) extends FromExternalWorld {
+    override def forward(playerName: PlayerName): GameInfoKeeper.Command =
+      GameInfoKeeper.UpdatePlayerTeamId(playerName, teamId)
+  }
+  case class Disconnect() extends FromExternalWorld {
+    override def forward(playerName: PlayerName): GameInfoKeeper.Command =
+      GameInfoKeeper.RemovePlayer(playerName)
+  }
 
   def fromClientToServer(message: ClientToServer): FromExternalWorld = message match {
     case ClientToServer.SelectAbilityId(abilityId) =>
       UpdateAbility(abilityId)
     case ClientToServer.ChangeReadyStatus(ready) =>
       UpdateReadyStatus(ready)
+    case ClientToServer.ChangeTeamId(teamId) =>
+      UpdateTeamId(teamId)
     case ClientToServer.Disconnect =>
       Disconnect()
   }
@@ -48,15 +66,12 @@ object ConnectionActor {
           context.log.info("Connected")
           gameInfoKeeper ! GameInfoKeeper.NewPlayer(playerName)
           Behaviors.same
-        case UpdateAbility(abilityId) =>
-          gameInfoKeeper ! GameInfoKeeper.UpdatePlayerAbility(playerName, abilityId)
-          Behaviors.same
-        case UpdateReadyStatus(ready) =>
-          gameInfoKeeper ! GameInfoKeeper.UpdatePlayerReadyStatus(playerName, ready)
-          Behaviors.same
-        case Disconnect() =>
-          gameInfoKeeper ! GameInfoKeeper.RemovePlayer(playerName)
-          Behaviors.stopped
+        case externalMessage: FromExternalWorld =>
+          gameInfoKeeper ! externalMessage.forward(playerName)
+          externalMessage match {
+            case Disconnect() => Behaviors.stopped
+            case _            => Behaviors.same
+          }
       }
     }
 

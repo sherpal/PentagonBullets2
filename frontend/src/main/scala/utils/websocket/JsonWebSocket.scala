@@ -1,15 +1,15 @@
 package utils.websocket
 
 import com.raquo.airstream.eventbus.{EventBus, WriteBus}
-import com.raquo.laminar.api.L.EventStream
+import com.raquo.laminar.api.L.*
 import com.raquo.airstream.ownership.Owner
 import io.circe.parser.decode
 import io.circe.{Decoder, Encoder}
 import org.scalajs.dom
 import org.scalajs.dom.raw.MessageEvent
 import org.scalajs.dom.{Event, WebSocket}
-import urldsl.language.QueryParameters.dummyErrorImpl._
-import urldsl.language._
+import urldsl.language.QueryParameters.dummyErrorImpl.*
+import urldsl.language.*
 import zio.{CancelableFuture, UIO, ZIO}
 
 /** Prepares a WebSocket to connect to the specified url. The connection actually occurs when you run the `open` method.
@@ -17,17 +17,14 @@ import zio.{CancelableFuture, UIO, ZIO}
   * Messages coming from the server can be retrieved using the `$in` [[com.raquo.airstream.eventstream.EventStream]] and
   * sending messages to the server can be done by writing to the `outWriter` [[com.raquo.airstream.core.Observer]]
   */
-final class JsonWebSocket[In, Out, P, Q] private (
-    pathWithQueryParams: PathSegmentWithQueryParams[P, _, Q, _],
-    p: P,
-    q: Q,
+final class JsonWebSocket[In, Out] private (
+    path: String,
     host: String
 )(implicit
     decoder: Decoder[In],
     encoder: Encoder[Out]
 ) {
-
-  private def url: String = "ws://" + host + "/ws/" + pathWithQueryParams.createUrlString(p, q)
+  private def url: String = "ws://" + host + "/ws/" + path
 
   private lazy val socket = new WebSocket(url)
 
@@ -87,7 +84,7 @@ object JsonWebSocket {
   def apply[In, Out](path: PathSegment[Unit, _], host: String = dom.document.location.host)(implicit
       decoder: Decoder[In],
       encoder: Encoder[Out]
-  ): JsonWebSocket[In, Out, Unit, Unit] = new JsonWebSocket(path ? ignore, (), (), host)
+  ): JsonWebSocket[In, Out] = new JsonWebSocket(path.createPath(), host)
 
   def apply[In, Out, Q](
       path: PathSegment[Unit, _],
@@ -97,7 +94,7 @@ object JsonWebSocket {
   )(implicit
       decoder: Decoder[In],
       encoder: Encoder[Out]
-  ): JsonWebSocket[In, Out, Unit, Q] = new JsonWebSocket(path ? query, (), q, host)
+  ): JsonWebSocket[In, Out] = new JsonWebSocket((path ? query).createUrlString((), q), host)
 
   def apply[In, Out, Q](
       path: PathSegment[Unit, _],
@@ -106,6 +103,9 @@ object JsonWebSocket {
   )(implicit
       decoder: Decoder[In],
       encoder: Encoder[Out]
-  ): JsonWebSocket[In, Out, Unit, Q] = apply(path, query, q, dom.document.location.host)
+  ): JsonWebSocket[In, Out] = apply(path, query, q, dom.document.location.host)
+
+  given asObserver[Out]: Conversion[JsonWebSocket[_, Out], Observer[Out]] with
+    def apply(socket: JsonWebSocket[_, Out]): Observer[Out] = socket.outWriter
 
 }
