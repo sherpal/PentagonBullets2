@@ -18,8 +18,28 @@ import scala.reflect.ClassTag
 
 package object websockethelpers {
 
+  def heartbeat[T](t: T, every: FiniteDuration): Source[T, NotUsed] = Source.repeat(t).throttle(1, every)
+
   case class PoisonPill()
 
+  /** Creates a [[Flow]] that decouples messages passing through an actor.
+    *
+    * All entering messages are sent to the actor.
+    *
+    * The created [[Behavior]] receives as input an [[ActorRef]] to send messages to. These messages are sent downstream
+    * through the flow.
+    *
+    * A [[PoisonPill]] can be sent to that [[ActorRef]] in order to close the flow.
+    *
+    * @param behavior
+    *   [[Behavior]] to handle incoming messages. It receives an actor for sending outgoing messages.
+    * @param name
+    *   name to give to the actor
+    * @param onCompleteMessage
+    *   last message sent to complete
+    * @param onFailureMessage
+    *   message to send when there is a failure.
+    */
   def flowThroughActor[In, Out](
       behavior: ActorRef[Out | PoisonPill] => Behavior[In],
       name: String,

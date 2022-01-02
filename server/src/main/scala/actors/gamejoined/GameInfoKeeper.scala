@@ -21,6 +21,9 @@ object GameInfoKeeper {
   case class SendGameInfoTo[T](respondTo: ActorRef[T], adapter: GameJoinedInfo => T) extends Command:
     def send(gameJoinedInfo: GameJoinedInfo): Unit = respondTo ! adapter(gameJoinedInfo)
 
+  /** Sent to this actor when the game leader starts the game. */
+  case class StartGame(requester: PlayerName) extends Command
+
   sealed trait GameInfoUpdater extends Command {
     def updateGameInfo(gameJoinedInfo: GameJoinedInfo): GameJoinedInfo
   }
@@ -57,8 +60,11 @@ object GameInfoKeeper {
 
   def apply(notificationRef: ActorRef[GameJoinedInfo]): Behavior[Command] = Behaviors.setup[Command] { context =>
     context.log.info("Setup")
-    receiver(Pointed[GameJoinedInfo].unit, notificationRef)
+    clean(notificationRef)
   }
+
+  private def clean(notificationRef: ActorRef[GameJoinedInfo]) =
+    receiver(Pointed[GameJoinedInfo].unit, notificationRef)
 
   private def receiver(gameInfo: GameJoinedInfo, notificationRef: ActorRef[GameJoinedInfo]): Behavior[Command] =
     Behaviors.receive { (context, command) =>
@@ -67,11 +73,21 @@ object GameInfoKeeper {
           context.self ! SendGameInfoTo(respondTo = notificationRef, identity)
           Behaviors.same
         case sendTo: SendGameInfoTo[_] =>
-          sendTo.send(gameInfo.obfuscated)
+          sendTo.send(gameInfo)
           Behaviors.same
         case updater: GameInfoUpdater =>
           context.self ! SendGameInfo
           receiver(updater.updateGameInfo(gameInfo), notificationRef)
+        case StartGame(requester) =>
+          if gameInfo.isLeader(requester) && gameInfo.canStart then
+            // todo: move to game
+            context.log.info("Game starting...")
+            clean(notificationRef)
+          else
+            context.log.warn(
+              "Received StartGame request but either the game can't start, or it was not from the leader."
+            )
+            Behaviors.same
       }
     }
 

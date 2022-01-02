@@ -6,12 +6,14 @@ import akka.http.scaladsl.model.*
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
-import models.menus.{ClientToServer, GameJoinedInfo, PlayerName}
-import server.websockethelpers.{flowThroughActor, webSocketService, PoisonPill}
+import models.menus.{ClientToServer, GameJoinedInfo, PlayerName, ServerToClient}
+import server.websockethelpers.{flowThroughActor, heartbeat, webSocketService, PoisonPill}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.stream.typed.scaladsl.{ActorFlow, ActorSink, ActorSource}
 import org.slf4j.LoggerFactory
 import io.circe.Codec
+
+import scala.concurrent.duration._
 
 final class Routes()(using system: ActorSystem[_]) {
 
@@ -28,23 +30,17 @@ final class Routes()(using system: ActorSystem[_]) {
               .map(ConnectionActor.fromClientToServer)
               .via(
                 flowThroughActor(
-                  (ref: ActorRef[GameJoinedInfo | PoisonPill]) =>
+                  (ref: ActorRef[ServerToClient | PoisonPill]) =>
                     ConnectionActor(playerName, gameJoinedRef, gameJoinedRef, ref),
                   s"ConnectionActor${java.util.UUID.randomUUID()}",
                   ConnectionActor.Disconnect(),
                   _ => ConnectionActor.Disconnect()
                 )
               )
+              .merge(heartbeat(ServerToClient.Heartbeat, 5.seconds))
           )
         )
       }
     }
-
-}
-
-object Routes {
-
-  case object PoisonPill
-  type OuterWorldCommand = GameJoinedInfo | PoisonPill.type
 
 }

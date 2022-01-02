@@ -22,7 +22,7 @@ object ConnectionKeeper {
   ): Behavior[Command] = Behaviors.receive { (context, command) =>
     command match {
       case GameInfoUpdate(gameInfo) =>
-        connectedChildren.values.foreach(_ ! ConnectionActor.GameJoinedInfoUpdated(gameInfo))
+        connectedChildren.values.foreach(_ ! ConnectionActor.GameJoinedInfoUpdated(gameInfo.obfuscated))
         Behaviors.same
       case NewConnection(playerName, ref) if connectedChildren.contains(playerName) =>
         ref ! ConnectionActor.PlayerNameAlreadyConnected()

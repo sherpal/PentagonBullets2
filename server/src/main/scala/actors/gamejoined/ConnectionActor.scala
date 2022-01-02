@@ -11,12 +11,23 @@ import models.gamecodecs.CirceCodecs.*
 object ConnectionActor {
 
   sealed trait Command
+
+  sealed trait ForExternalWorld extends Command {
+    def forward: ServerToClient
+  }
+  case class GameJoinedInfoUpdated(gameJoinedInfo: GameJoinedInfo) extends ForExternalWorld {
+    def forward: ServerToClient = ServerToClient.GameInfoWrapper(gameJoinedInfo)
+  }
+  case class GameStarts(playerInfo: PlayerInfo, gameKey: java.util.UUID) extends ForExternalWorld {
+    def forward: ServerToClient = ServerToClient.GameStarts(playerInfo, gameKey)
+  }
+
+  case class PlayerNameAlreadyConnected() extends Command
+  case class Connected() extends Command
+
   sealed trait FromExternalWorld extends Command {
     def forward(playerName: PlayerName): GameInfoKeeper.Command
   }
-  case class GameJoinedInfoUpdated(gameJoinedInfo: GameJoinedInfo) extends Command
-  case class PlayerNameAlreadyConnected() extends Command
-  case class Connected() extends Command
   case class UpdateAbility(abilityId: Ability.AbilityId) extends FromExternalWorld {
     def forward(playerName: PlayerName): GameInfoKeeper.Command =
       GameInfoKeeper.UpdatePlayerAbility(playerName, abilityId)
@@ -30,8 +41,12 @@ object ConnectionActor {
       GameInfoKeeper.UpdatePlayerTeamId(playerName, teamId)
   }
   case class Disconnect() extends FromExternalWorld {
-    override def forward(playerName: PlayerName): GameInfoKeeper.Command =
+    def forward(playerName: PlayerName): GameInfoKeeper.Command =
       GameInfoKeeper.RemovePlayer(playerName)
+  }
+  case class StartGame() extends FromExternalWorld {
+    def forward(playerName: PlayerName): GameInfoKeeper.Command =
+      GameInfoKeeper.StartGame(playerName)
   }
 
   def fromClientToServer(message: ClientToServer): FromExternalWorld = message match {
@@ -43,20 +58,22 @@ object ConnectionActor {
       UpdateTeamId(teamId)
     case ClientToServer.Disconnect =>
       Disconnect()
+    case ClientToServer.StartGame =>
+      StartGame()
   }
 
   def apply(
       playerName: PlayerName,
       connectionKeeper: ActorRef[ConnectionKeeper.Command],
       gameInfoKeeper: ActorRef[GameInfoKeeper.Command],
-      outerWorld: ActorRef[GameJoinedInfo | server.websockethelpers.PoisonPill]
+      outerWorld: ActorRef[ServerToClient | server.websockethelpers.PoisonPill]
   ): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       connectionKeeper ! ConnectionKeeper.NewConnection(playerName, context.self)
 
       Behaviors.receiveMessage {
-        case GameJoinedInfoUpdated(gameJoinedInfo) =>
-          outerWorld ! gameJoinedInfo
+        case msg: ForExternalWorld =>
+          outerWorld ! msg.forward
           Behaviors.same
         case PlayerNameAlreadyConnected() =>
           context.log.error("This player was already connected, shutting down...")

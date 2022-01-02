@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L.*
 import frontend.AppState.*
 import gamelogic.abilities.Ability
 import gamelogic.entities.Entity.TeamId
-import models.menus.{AbilityInfo, ClientToServer, GameJoinedInfo, PlayerInfo, PlayerName}
+import models.menus.{AbilityInfo, ClientToServer, GameJoinedInfo, PlayerInfo, PlayerName, ServerToClient}
 import utils.websocket.JsonWebSocket
 import urldsl.language.dummyErrorImpl.*
 
@@ -16,14 +16,15 @@ object GameJoinedComponent {
 
     def playerName: PlayerName = PlayerName(gameJoined.name.value)
 
-    val socket: JsonWebSocket[GameJoinedInfo, ClientToServer] =
-      JsonWebSocket[GameJoinedInfo, ClientToServer, String](
-        root / "game-joined",
-        param[String]("player-name"),
-        playerName.name
-      )
+    val socket: JsonWebSocket[ServerToClient, ClientToServer] =
+      JsonWebSocket(root / "game-joined", param[String]("player-name"), playerName.name)
 
-    val gameInfoEvents: EventStream[GameJoinedInfo] = socket.$in
+    val gameInfoEvents: EventStream[GameJoinedInfo] = socket.$in.collect {
+      case ServerToClient.GameInfoWrapper(gameInfo) => gameInfo
+    }
+
+    val gameStartsEvents: EventStream[ServerToClient.GameStarts] =
+      socket.$in.collect { case msg: ServerToClient.GameStarts => msg }
 
     val abilityId: Var[Ability.AbilityId] = Var(PlayerInfo.init(PlayerName(gameJoined.name.value), 0).ability)
 
@@ -61,6 +62,12 @@ object GameJoinedComponent {
       ready.signal.changes.map(ClientToServer.ChangeReadyStatus.apply) --> socket
     )
 
+    val startGameButton = button(
+      "Start game",
+      disabled <-- gameInfoEvents.map(_.canStart).map(!_),
+      onClick.mapTo(ClientToServer.StartGame) --> socket
+    )
+
     div(
       s"Your name will be ${gameJoined.name}",
       onMountCallback(context => socket.open()(using context.owner)),
@@ -96,7 +103,11 @@ object GameJoinedComponent {
             }
           }
         )
-      )
+      ),
+      child <-- gameInfoEvents.map(_.isLeader(playerName)).map {
+        case true  => startGameButton
+        case false => emptyNode
+      }
     )
   }
 
