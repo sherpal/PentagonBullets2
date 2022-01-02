@@ -131,7 +131,9 @@ object Ability {
   val tripleBulletId: AbilityId          = nextAbilityId()
   val teleportationId: AbilityId         = nextAbilityId()
 
+  val allAbilityIds: Vector[AbilityId] = (1 to maxAbilityId).toVector
+
   def nonShieldAbilityIds: List[AbilityId] =
-    (1 to maxAbilityId).toList.filterNot(_ == activateShieldId)
+    allAbilityIds.toList.filterNot(_ == activateShieldId)
 
 }
