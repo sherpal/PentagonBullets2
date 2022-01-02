@@ -1,20 +1,19 @@
 package scypress
 
 import facades.Chainable
-import facades.global.{cy => cy0}
-
+import facades.global.cy as cy0
 import org.scalajs.dom.HTMLElement
+
 import scala.scalajs.js
 import org.scalajs.dom
 
 import scala.reflect.ClassTag
-
 import scala.concurrent.Future
-import scypress.models._
-import scypress.models.CustomTypes._
+import scypress.models.*
+import scypress.models.CustomTypes.*
 import facades.JQuery
 
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 trait Scypress[+To]:
 
@@ -48,11 +47,10 @@ trait Scypress[+To]:
 
   /** Clicks on the html element.
     */
-  def click()(using ev: To <:< HTMLElement): Scypress[To] =
-    Click(this.asInstanceOf[Scypress[HTMLElement & To]])
+  def click()(using ev: To <:< JQuery[HTMLElement]): Scypress[To] = new Click(this)
 
   def find(selector: String)(using To <:< HTMLElement): Scypress[HTMLElement] =
-    Finder(this, selector)
+    new Finder(this, selector)
 
   /** Executes this chain first, then uses the result to create a new chain, and executes that new chain.
     */
@@ -80,10 +78,13 @@ trait Scypress[+To]:
 
   /** Executes this chain, then transforms the result via `f`.
     */
-  def map[U](f: To => U): Scypress[U] = new Mapped(this, f)
+  def map[U](f: To => U): Scypress[U] = flatMap(to => new Value(f(to)))
+
+  def select(value: String)(using ev: To <:< JQuery[dom.HTMLSelectElement]): Scypress[JQuery[dom.HTMLSelectElement]] =
+    new SelectOption(ev.liftCo.apply(this), value)
 
   def someOrFail[To0](using ev: To <:< Option[To0]): Scypress[To0] =
-    SomeOrFail(this.asInstanceOf[Scypress[Option[To0]]])
+    SomeOrFail(ev.liftCo(this))
 
   /** Alias for <*
     */
@@ -115,5 +116,8 @@ object Scypress:
     def run(): Chainable[Unit]                   = cy0
 
   def fromFuture[T](future: => Future[T]): Scypress[T] = ScypressAST.FromFuture(future)
+
+  def foreach_[T, U](elements: Iterable[T])(effect: T => Scypress[U]): Scypress[Unit] =
+    elements.map(effect).reduceOption(_ *> _).fold(cy)(_.unit)
 
 end Scypress

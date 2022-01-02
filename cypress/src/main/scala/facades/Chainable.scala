@@ -28,6 +28,8 @@ trait Chainable[+T] extends js.Object:
 
   def click(): Chainable[T] = js.native
 
+  def select(value: String): Chainable[JQuery[dom.HTMLSelectElement]] = js.native
+
   def should(chainer: String, value: Any): Chainable[T] = js.native
 
   @JSName("should")

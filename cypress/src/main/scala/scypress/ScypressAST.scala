@@ -1,18 +1,18 @@
 package scypress
 
-import scalajs.js.JSConverters._
+import scalajs.js.JSConverters.*
 import scala.concurrent.Future
-
 import facades.Chainable
-import facades.global.{cy => cy0}
-
+import facades.global.cy as cy0
 import org.scalajs.dom.HTMLElement
+
 import scala.scalajs.js
 import org.scalajs.dom
 import facades.JQuery
-
-import scypress.models._
-import scypress.models.CustomTypes._
+import org.scalajs.dom.HTMLSelectElement
+import org.scalajs.dom.HTMLOptionElement
+import scypress.models.*
+import scypress.models.CustomTypes.*
 
 private[scypress] object ScypressAST:
 
@@ -45,16 +45,17 @@ private[scypress] object ScypressAST:
   final class MakeAlias[T](from: Scypress[T], alias: Alias[T])(using IsNotUnit[T] =:= true) extends Scypress[T]:
     def run(): Chainable[T] = from.run().as(alias.ref)
 
-  final class Mapped[T, U](from: Scypress[T], f: T => U) extends Scypress[U]:
-    def run(): Chainable[U] = from.run().map(f)
-
-  final class Click[To <: HTMLElement](from: Scypress[To]) extends Scypress[To]:
+  final class Click[To](from: Scypress[To]) extends Scypress[To]:
     def run(): Chainable[To] = from.run().click()
 
   final class Focused(from: Scypress[Any]) extends Scypress[JQuery[HTMLElement]]:
     def run(): Chainable[JQuery[HTMLElement]] =
       from.run()
       cy0.focused()
+
+  final class SelectOption(from: Scypress[JQuery[HTMLSelectElement]], value: String)
+      extends Scypress[JQuery[HTMLSelectElement]]:
+    def run(): Chainable[JQuery[HTMLSelectElement]] = from.run().select(value)
 
   final class SomeOrFail[To](from: Scypress[Option[To]]) extends Scypress[To]:
     def run(): Chainable[To] = from

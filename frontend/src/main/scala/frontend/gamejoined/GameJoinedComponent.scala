@@ -29,6 +29,7 @@ object GameJoinedComponent {
     val abilityId: Var[Ability.AbilityId] = Var(PlayerInfo.init(PlayerName(gameJoined.name.value), 0).ability)
 
     val abilitySelector = select(
+      className := "ability-selector",
       AbilityInfo.allAbilityInfo.map { info =>
         option(value := info.id.toString, info.name)
       },
@@ -40,6 +41,7 @@ object GameJoinedComponent {
     )
 
     val teamIdSelector = select(
+      className := "team-id-selector",
       children <-- gameInfoEvents
         .map(_.allTeamIdsWithUnused)
         .map(_.map { teamId =>
@@ -54,6 +56,7 @@ object GameJoinedComponent {
     val ready: Var[Boolean] = Var(false)
 
     val readyCheckbox = input(
+      className := "ready-checkbox",
       tpe := "checkbox",
       controlled(
         checked <-- ready.signal,
@@ -63,6 +66,7 @@ object GameJoinedComponent {
     )
 
     val startGameButton = button(
+      className := "start-game-button",
       "Start game",
       disabled <-- gameInfoEvents.map(_.canStart).map(!_),
       onClick.mapTo(ClientToServer.StartGame) --> socket
@@ -81,6 +85,7 @@ object GameJoinedComponent {
         label("Chose your ability"),
         abilitySelector,
         p(
+          className := "ability-description",
           child.text <-- abilityId.signal.map(AbilityInfo.abilityInfoFromId).map(_.description)
         )
       ),
