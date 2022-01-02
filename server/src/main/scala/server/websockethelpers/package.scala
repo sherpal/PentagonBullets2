@@ -3,14 +3,16 @@ package server
 import io.circe.*
 import io.circe.parser.decode
 import io.circe.syntax.*
-import akka.util.Timeout
+import akka.util.{ByteString, Timeout}
 import akka.actor.typed.scaladsl.*
 import akka.actor.typed.*
 import akka.NotUsed
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source}
-import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
+import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.stream.OverflowStrategy
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
+import boopickle.Default.*
+import scala.util.Try
 
 import scala.concurrent.duration.*
 import scala.concurrent.Future
@@ -69,6 +71,31 @@ package object websockethelpers {
     )
   }
 
+  /** Same as [[webSocketService]], but uses boopickle and binary messages instead. */
+  def binaryWebSocketService[In, Out, Mat](
+      via: Flow[In, Out, Mat]
+  )(using system: ActorSystem[_], decoder: Pickler[In], encoder: Pickler[Out]): Flow[Message, Message, Mat] = {
+    import system.executionContext
+    Flow[Message]
+      .mapAsync(16) {
+        case tm: TextMessage =>
+          tm.textStream.runWith(Sink.ignore)
+          Future.successful(Left(new RuntimeException("Don't handle text messages")))
+        case bm: BinaryMessage =>
+          bm.dataStream
+            .runWith(Sink.reduce(_ ++ _))
+            .map(rawContent => Try(Unpickle[In].fromBytes(rawContent.asByteBuffer)).toEither)
+      }
+      .alsoTo(
+        Flow[Either[Throwable, _]]
+          .collect { case Left(error) => error }
+          .to(Sink.foreach[Throwable](_.printStackTrace()))
+      )
+      .collect { case Right(in) => in }
+      .viaMat(via)(Keep.right)
+      .map(out => BinaryMessage(ByteString.fromByteBuffer(Pickle.intoBytes(out))))
+  }
+
   /** Flow used for the web socket route. Incoming string messages are deserialized into instances of In using Circe,
     * and output Out messages are serialized back into string message using Circe again.
     *
@@ -83,7 +110,7 @@ package object websockethelpers {
     Flow[Message]
       .mapAsync(16) {
         case tm: TextMessage =>
-          tm.toStrict(1.second).map(msg => decode[In](msg.text))
+          tm.textStream.runWith(Sink.reduce(_ ++ _)).map(msg => decode[In](msg))
         case bm: BinaryMessage =>
           bm.dataStream.runWith(Sink.ignore)
           Future.successful(Left(new RuntimeException("Don't handle binary messages")))
