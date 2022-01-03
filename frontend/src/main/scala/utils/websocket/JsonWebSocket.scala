@@ -23,7 +23,7 @@ final class JsonWebSocket[In, Out] private (
 )(implicit
     decoder: Decoder[In],
     encoder: Encoder[Out]
-) {
+) extends Socket[In, Out] {
   private def url: String = "ws://" + host + "/ws/" + path
 
   private lazy val socket = new WebSocket(url)
@@ -104,8 +104,4 @@ object JsonWebSocket {
       decoder: Decoder[In],
       encoder: Encoder[Out]
   ): JsonWebSocket[In, Out] = apply(path, query, q, dom.document.location.host)
-
-  given asObserver[Out]: Conversion[JsonWebSocket[_, Out], Observer[Out]] with
-    def apply(socket: JsonWebSocket[_, Out]): Observer[Out] = socket.outWriter
-
 }

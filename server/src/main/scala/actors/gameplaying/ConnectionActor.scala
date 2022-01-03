@@ -2,7 +2,7 @@ package actors.gameplaying
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import gamecommunication.{ClientToServer, ServerToClient}
+import gamecommunication.{gameActionIdPickler, ClientToServer, ServerToClient}
 import models.menus.PlayerName
 import gamelogic.gamestate.GameAction
 
@@ -16,7 +16,14 @@ object ConnectionActor {
   case object Ready extends FromExternalWorld
   case object ReadyToStart extends FromExternalWorld
   case object Disconnect extends Command
+  case class HereIsTheGameMaster(gameMasterRef: ActorRef[GameMaster.Command]) extends Command
   case class GameActionWrapper(actions: List[GameAction]) extends FromExternalWorld
+
+  sealed trait ForExternalWorld extends Command {
+    def forward: ServerToClient
+  }
+
+  case class ServerToClientWrapper(forward: ServerToClient) extends ForExternalWorld
 
   def fromClientToServer(clientToServer: ClientToServer): FromExternalWorld = clientToServer match {
     case ClientToServer.Ping(sendingTime)              => Ping(sendingTime)
@@ -53,12 +60,45 @@ object ConnectionActor {
           Behaviors.same
         case Ready =>
           context.log.info(s"Clock for $playerName is synchronized.")
+          behaviorArgs.gamePlayingRef ! GamePlaying.PlayerConnected(playerName, context.self)
           playerIsReady(behaviorArgs)
         case _ =>
           Behaviors.unhandled
       }
     }
 
-  private def playerIsReady(behaviorArgs: BehaviorArgs): Behavior[Command] = ???
+  private def playerIsReady(behaviorArgs: BehaviorArgs): Behavior[Command] = Behaviors.receive { (context, command) =>
+    val playerName = behaviorArgs.playerName
+    val outerWorld = behaviorArgs.outerWorld
+    command match {
+      case msg: ForExternalWorld =>
+        outerWorld ! msg.forward
+        Behaviors.same
+      case Disconnect =>
+        Behaviors.stopped
+      case ReadyToStart =>
+        context.log.info(s"Player $playerName is ready to start!")
+        ???
+      case HereIsTheGameMaster(gameMasterRef) =>
+        gameMasterIsKnown(gameMasterRef, behaviorArgs)
+      case _ =>
+        Behaviors.unhandled
+    }
+  }
+
+  private def gameMasterIsKnown(gameMasterRef: ActorRef[GameMaster.Command], args: BehaviorArgs): Behavior[Command] =
+    val playerName = args.playerName
+    val outerWorld = args.outerWorld
+
+    Behaviors.receive { (context, command) =>
+      command match {
+        case GameActionWrapper(actions) => ???
+        case msg: ForExternalWorld =>
+          outerWorld ! msg.forward
+          Behaviors.same
+        case _ =>
+          Behaviors.unhandled
+      }
+    }
 
 }

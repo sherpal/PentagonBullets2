@@ -5,6 +5,11 @@ import akka.actor.typed.{ActorRef, Behavior}
 import models.menus.GameJoinedInfo
 import models.menus.GameKeys.GameKey
 
+/** The [[GamePlayingKeeper]] is the guy to contact when a game needs to start.
+  *
+  * It will spawn a new [[GamePlaying]] and warn when it's done. Then, anyone can ask for the reference to a particular
+  * [[GamePlaying]] based on the [[GameKey]].
+  */
 object GamePlayingKeeper {
 
   sealed trait Command

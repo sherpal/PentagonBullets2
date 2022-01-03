@@ -1,11 +1,18 @@
 package models.menus
 
+import entitiescollections.PlayerTeam
 import gamelogic.abilities.Ability
 import gamelogic.entities.Entity.TeamId
+import gamelogic.entities.concreteentities.GameArea
+import gamelogic.gamestate.{GameAction, GameState}
+import gamelogic.utils.IdGeneratorContainer
 import io.circe.generic.semiauto.*
 import io.circe.{Codec, Decoder, Encoder}
+import models.playing.GameStateInitializer
 
 final case class GameJoinedInfo(players: Map[PlayerName, PlayerInfo], maybeLeader: Option[PlayerName]) {
+
+  def numberOfPlayers: Int = players.size
 
   def withPlayer(playerInfo: PlayerInfo): GameJoinedInfo = copy(
     players = players + (playerInfo.name -> playerInfo),
@@ -47,6 +54,11 @@ final case class GameJoinedInfo(players: Map[PlayerName, PlayerInfo], maybeLeade
   def firstUnusedTeamId: Int = LazyList.from(1).find(teamId => !allTeamIds.contains(teamId)).get // this must terminate
 
   def allTeamIdsWithUnused: List[TeamId] = (allTeamIds + firstUnusedTeamId).toList.sorted
+
+  def allPlayerNames: Set[PlayerName] = players.keySet
+
+  def initializeGameState(implicit idGeneratorContainer: IdGeneratorContainer): (GameState, List[GameAction]) =
+    GameStateInitializer.initializeGameState(this)
 
 }
 

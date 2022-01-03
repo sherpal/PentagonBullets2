@@ -3,9 +3,25 @@ package gamelogic.gamestate
 import gamelogic.entities.*
 import gamelogic.buffs.*
 import gamelogic.entities.concreteentities.{HealingZone, *}
-import be.doeraene.physics.shape.Polygon
+import be.doeraene.physics.shape.{Polygon, Shape}
 
 import scala.reflect.ClassTag
+
+object GameState {
+
+  def initialGameState: GameState = new GameState(
+    0L,
+    None,
+    None,
+    Shape.regularPolygon(3),
+    Map.empty,
+    Map.empty,
+    Map.empty,
+    Map.empty,
+    Map.empty
+  )
+
+}
 
 final class GameState(
     val time: Long,

@@ -28,7 +28,7 @@ final class BinaryWebSocket[In, Out] private (
 )(implicit
     decoder: Pickler[In],
     encoder: Pickler[Out]
-) {
+) extends Socket[In, Out] {
   private def url: String = "ws://" + host + "/ws/" + path
 
   private lazy val socket = {

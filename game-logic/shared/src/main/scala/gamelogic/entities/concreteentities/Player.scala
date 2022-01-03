@@ -72,6 +72,8 @@ object Player {
 
   val maxBulletRate: Long = 100
 
+  val maxEnergy: Double = 100
+
   def bulletHitPlayer(player: Player, damage: Double, time: Long): Player = player.takeDamage(damage)
 
   def smashBulletHitPlayer(player: Player, time: Long): Player =

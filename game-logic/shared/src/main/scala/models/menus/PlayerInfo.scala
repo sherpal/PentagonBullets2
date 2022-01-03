@@ -24,6 +24,8 @@ final case class PlayerInfo(
   )
 
   def changeTeamId(teamId: TeamId): PlayerInfo = copy(teamId = teamId)
+
+  def allowedAbilities: List[Ability.AbilityId] = List(ability, Ability.activateShieldId)
 }
 
 object PlayerInfo {

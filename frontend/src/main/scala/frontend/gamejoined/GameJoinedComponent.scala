@@ -5,7 +5,7 @@ import frontend.AppState.*
 import gamelogic.abilities.Ability
 import gamelogic.entities.Entity.TeamId
 import models.menus.{AbilityInfo, ClientToServer, GameJoinedInfo, PlayerInfo, PlayerName, ServerToClient}
-import utils.websocket.JsonWebSocket
+import utils.websocket.{JsonWebSocket, Socket}
 import urldsl.language.dummyErrorImpl.*
 
 import scala.scalajs.js.JSON
@@ -16,7 +16,7 @@ object GameJoinedComponent {
 
     def playerName: PlayerName = PlayerName(gameJoined.name.value)
 
-    val socket: JsonWebSocket[ServerToClient, ClientToServer] =
+    val socket: Socket[ServerToClient, ClientToServer] =
       JsonWebSocket(root / "game-joined", param[String]("player-name"), playerName.name)
 
     val gameInfoEvents: EventStream[GameJoinedInfo] = socket.$in.collect {
@@ -117,7 +117,6 @@ object GameJoinedComponent {
         div(info.toString, br(), gameKey.toString)
       },
       gameStartsEvents
-        .delay(2000)
         .map(gameStartsInfo => GameStarted(gameStartsInfo.playerInfo, gameStartsInfo.gameKey)) --> stateChanger
     )
   }

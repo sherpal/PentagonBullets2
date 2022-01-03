@@ -4,10 +4,12 @@ import be.doeraene.physics.Complex
 import be.doeraene.physics.Complex.i
 import gamelogic.gamestate.{GameAction, GameState}
 import be.doeraene.physics.shape.ConvexPolygon
+import gamelogic.entities.ActionSource.ServerSource
 import gamelogic.entities.{ActionSource, Entity}
-import gamelogic.gamestate.gameactions.NewObstacle
+import gamelogic.gamestate.gameactions.{NewObstacle, NewPlayer, TranslatePlayer}
 import gamelogic.utils.{EntityIdGenerator, IdGeneratorContainer}
 import gamelogic.utils.Time
+import models.menus.PlayerInfo
 
 class GameArea(val width: Int = 1000, val height: Int = 800) {
 
@@ -15,6 +17,11 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
     (scala.util.Random.nextInt(width - 100) - width / 2 + 50).toDouble,
     (scala.util.Random.nextInt(height - 100) - height / 2 + 50).toDouble
   )
+
+  def randomComplexPos(): Complex = Complex.fromTuple(randomPos())
+
+  def randomComplexPosSatisfying(predicate: Complex => Boolean): Complex =
+    LazyList.from(0).map(_ => randomComplexPos()).filter(predicate).head
 
   /** Returns a random position in the region with specified center and dimensions.
     */
@@ -31,40 +38,25 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
       (scala.util.Random.nextInt(height - 100) - height / 2 + 50).toDouble
     )
   }
+
   val topEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(0, height / 2 + 5),
     Obstacle.segmentObstacleVertices(-width / 2 - 10, width / 2 + 10, 10)
-//    Vector(
-//      Complex(-width / 2 - 10, -5), Complex(width / 2 + 10, -5),
-//      Complex(width / 2 + 10, 5), Complex(- width / 2 - 10, 5)
-//    )
   )
 
   val bottomEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(0, -height / 2 - 5),
     Obstacle.segmentObstacleVertices(-width / 2 - 10, width / 2 + 10, 10)
-//    Vector(
-//      Complex(-width / 2 - 10, -5), Complex(width / 2 + 10, -5),
-//      Complex(width / 2 + 10, 5), Complex(- width / 2 - 10, 5)
-//    )
   )
 
   val leftEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(-width / 2 - 5, 0),
     Obstacle.segmentObstacleVertices(-i * height / 2, i * height / 2, 10)
-//    Vector(
-//      Complex(-5, -height / 2), Complex(5, -height / 2),
-//      Complex(5, height / 2), Complex(-5, height / 2)
-//    )
   )
 
   val rightEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(width / 2 + 5, 0),
     Obstacle.segmentObstacleVertices(-i * height / 2, i * height / 2, 10)
-//    Vector(
-//      Complex(-5, -height / 2), Complex(5, -height / 2),
-//      Complex(5, height / 2), Complex(-5, height / 2)
-//    )
   )
 
   val gameAreaEdgesVertices: List[(Complex, Vector[Complex])] = List(
@@ -80,10 +72,46 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
     NewObstacle(GameAction.newId(), Time.currentTime(), Entity.newId(), Complex(0, 0), vertices, source)
   }
 
-  def createObstacle(gameState: GameState, width: Int, height: Int, source: ActionSource)(using
-      IdGeneratorContainer
+  def createPlayer(playerInfo: PlayerInfo)(implicit idGeneratorContainer: IdGeneratorContainer): NewPlayer = {
+    val player = Player(
+      Entity.newId(),
+      playerInfo.teamId,
+      Time.currentTime(),
+      playerInfo.name.name,
+      allowedAbilities = playerInfo.allowedAbilities,
+      relevantUsedAbilities = Map.empty,
+      energy = Player.maxEnergy
+    )
+    NewPlayer(GameAction.newId(), player, Time.currentTime(), ServerSource)
+  }
+
+  def translateTeams(gameState: GameState, minimalDistances: Double)(implicit
+      idGeneratorContainer: IdGeneratorContainer
+  ): List[TranslatePlayer] = {
+    val teams = gameState.players.values.groupBy(_.team).values.map(_.toList)
+
+    teams
+      .foldLeft[(GameState, List[TranslatePlayer])]((gameState, List.empty)) {
+        case ((gameStateAcc, actionsAcc), nextTeam) =>
+          val position =
+            randomComplexPosSatisfying(pos =>
+              gameStateAcc.players.values.forall(_.pos.distanceTo(pos) > minimalDistances)
+            )
+
+          val actions = nextTeam.map(player =>
+            TranslatePlayer(GameAction.newId(), Time.currentTime(), player.id, position, ServerSource)
+          )
+
+          (gameStateAcc.applyActions(actions), actions ++ actionsAcc)
+      }
+      ._2
+
+  }
+
+  def createObstacle(gameState: GameState, width: Int, height: Int, source: ActionSource)(implicit
+      idGeneratorContainer: IdGeneratorContainer
   ): NewObstacle = {
-    val (x, y) = randomPos()
+    val pos = randomComplexPos()
     val vertices = Vector(
       Complex(-width / 2, -height / 2),
       Complex(width / 2, -height / 2),
@@ -95,14 +123,13 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
 
     if (
       gameState.players.values
-        .exists(player => player.shape.collides(player.pos, player.rotation, obstacleShape, Complex(x, y), 0))
+        .exists(player => player.shape.collides(player.pos, player.rotation, obstacleShape, pos, 0))
     )
       createObstacle(gameState, width, height, source)
     else
-      NewObstacle(GameAction.newId(), Time.currentTime(), Entity.newId(), Complex(x, y), vertices, source)
+      NewObstacle(GameAction.newId(), Time.currentTime(), Entity.newId(), pos, vertices, source)
 
   }
-
 }
 
 object GameArea {
