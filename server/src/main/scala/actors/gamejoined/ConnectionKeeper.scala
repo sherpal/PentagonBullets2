@@ -2,7 +2,9 @@ package actors.gamejoined
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.io.Tcp.CommandFailed
 import models.menus.{GameJoinedInfo, PlayerName}
+import models.menus.GameKeys.GameKey
 
 object ConnectionKeeper {
   sealed trait Command
@@ -13,7 +15,8 @@ object ConnectionKeeper {
       ref: ActorRef[ConnectionActor.Command]
   ) extends Command
   case class ConnectionDied(playerName: PlayerName) extends Command
-  case class GameStarts(gameJoinedInfo: GameJoinedInfo, gameKey: java.util.UUID) extends Command
+  case class GameStarts(gameJoinedInfo: GameJoinedInfo, gameKey: GameKey) extends Command
+  private[gamejoined] case class GameReady(gameJoinedInfo: GameJoinedInfo, gameKey: GameKey) extends Command
 
   def apply(parent: ActorRef[GameJoined.Command]): Behavior[Command] = receiver(parent, Map.empty)
 
@@ -38,11 +41,18 @@ object ConnectionKeeper {
         context.log.info(s"Connection died: ${playerName.name}")
         receiver(parent, connectedChildren = connectedChildren - playerName)
       case GameStarts(gameJoinedInfo, gameKey) =>
+        parent ! GameJoined.GameStarts(gameJoinedInfo, gameKey)
         connectedChildren.foreach { (playerName, ref) =>
           val info = gameJoinedInfo.players(playerName) // cowboy style
           ref ! ConnectionActor.GameStarts(info, gameKey)
         }
         Behaviors.same
+      case GameReady(gameJoinedInfo, gameKey) =>
+        connectedChildren.foreach { (playerName, ref) =>
+          val info = gameJoinedInfo.players(playerName) // cowboy style
+          ref ! ConnectionActor.GameStarts(info, gameKey)
+        }
+        ???
     }
   }
 }

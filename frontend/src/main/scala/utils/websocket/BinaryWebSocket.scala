@@ -83,9 +83,9 @@ final class BinaryWebSocket[In, Out] private (
 
 object BinaryWebSocket {
 
-  def apply[In, Out](path: PathSegment[Unit, _], host: String = dom.document.location.host)(implicit
-      decoder: Pickler[In],
-      encoder: Pickler[Out]
+  def apply[In, Out](path: PathSegment[Unit, _], host: String = dom.document.location.host)(using
+      Pickler[In],
+      Pickler[Out]
   ): BinaryWebSocket[In, Out] = new BinaryWebSocket(path.createPath(), host)
 
   def apply[In, Out, Q](
@@ -93,19 +93,14 @@ object BinaryWebSocket {
       query: QueryParameters[Q, _],
       q: Q,
       host: String
-  )(implicit
-      decoder: Pickler[In],
-      encoder: Pickler[Out]
-  ): BinaryWebSocket[In, Out] = new BinaryWebSocket((path ? query).createUrlString((), q), host)
+  )(using Pickler[In], Pickler[Out]): BinaryWebSocket[In, Out] =
+    new BinaryWebSocket((path ? query).createUrlString((), q), host)
 
   def apply[In, Out, Q](
       path: PathSegment[Unit, _],
       query: QueryParameters[Q, _],
       q: Q
-  )(implicit
-      decoder: Pickler[In],
-      encoder: Pickler[Out]
-  ): BinaryWebSocket[In, Out] = apply(path, query, q, dom.document.location.host)
+  )(using Pickler[In], Pickler[Out]): BinaryWebSocket[In, Out] = apply(path, query, q, dom.document.location.host)
 
   given asObserver[Out]: Conversion[BinaryWebSocket[_, Out], Observer[Out]] with
     def apply(socket: BinaryWebSocket[_, Out]): Observer[Out] = socket.outWriter

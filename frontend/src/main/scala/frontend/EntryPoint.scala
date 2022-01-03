@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L.*
 import frontend.AppState.NameRequired
 import zio.*
 import org.scalajs.dom
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object EntryPoint {
   def main(args: Array[String]): Unit = {
@@ -14,6 +15,9 @@ object EntryPoint {
 
     def renderApp(container: dom.Element) = UIO(render(container, App()))
 
-    runtime.unsafeRun(containerDiv >>= renderApp)
+    for {
+      _ <- zio.Runtime.default.unsafeRunToFuture(initialiseRuntime)
+      _ <- runtime.unsafeRunToFuture(containerDiv >>= renderApp)
+    } yield ()
   }
 }

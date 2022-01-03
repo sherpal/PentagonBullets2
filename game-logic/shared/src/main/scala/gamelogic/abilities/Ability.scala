@@ -127,9 +127,9 @@ object Ability {
   val createHealingZoneId: AbilityId     = nextAbilityId()
   val laserId: AbilityId                 = nextAbilityId()
   val launchSmashBulletId: AbilityId     = nextAbilityId()
-  val putBulletGlue: AbilityId           = nextAbilityId()
-  val tripleBulletId: AbilityId          = nextAbilityId()
+  val putBulletGlueId: AbilityId         = nextAbilityId()
   val teleportationId: AbilityId         = nextAbilityId()
+  val tripleBulletId: AbilityId          = nextAbilityId()
 
   val allAbilityIds: Vector[AbilityId] = (1 to maxAbilityId).toVector
 

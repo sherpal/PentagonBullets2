@@ -15,6 +15,7 @@ object SharedDependencies {
     ).map(_ % circeVersion) ++ List(
       "be.doeraene" %%% "url-dsl" % "0.4.0",
       "dev.zio" %%% "zio" % "1.0.13",
+      "dev.zio" %%% "zio-streams" % "1.0.13",
       "io.suzaku" %%% "boopickle" % "1.4.0"
     )
   )

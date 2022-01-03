@@ -13,6 +13,7 @@ object App {
       child <-- appState.signal.map {
         case nameRequired: NameRequired => ChooseName(nameRequired, stateObserver)
         case gameJoined: GameJoined     => gamejoined.GameJoinedComponent(gameJoined, stateObserver)
+        case gameStarted: GameStarted   => ingame.GamePlaying(gameStarted, stateObserver)
       }
     )
   }

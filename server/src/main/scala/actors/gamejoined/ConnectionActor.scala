@@ -7,6 +7,7 @@ import server.gamejoined.Routes
 import gamelogic.abilities.Ability
 import gamelogic.entities.Entity.TeamId
 import models.gamecodecs.CirceCodecs.*
+import models.menus.GameKeys.GameKey
 
 object ConnectionActor {
 
@@ -18,7 +19,7 @@ object ConnectionActor {
   case class GameJoinedInfoUpdated(gameJoinedInfo: GameJoinedInfo) extends ForExternalWorld {
     def forward: ServerToClient = ServerToClient.GameInfoWrapper(gameJoinedInfo)
   }
-  case class GameStarts(playerInfo: PlayerInfo, gameKey: java.util.UUID) extends ForExternalWorld {
+  case class GameStarts(playerInfo: PlayerInfo, gameKey: GameKey) extends ForExternalWorld {
     def forward: ServerToClient = ServerToClient.GameStarts(playerInfo, gameKey)
   }
 

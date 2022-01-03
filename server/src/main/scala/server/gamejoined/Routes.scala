@@ -8,18 +8,13 @@ import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
 import models.menus.{ClientToServer, GameJoinedInfo, PlayerName, ServerToClient}
 import server.websockethelpers.{flowThroughActor, heartbeat, webSocketService, PoisonPill}
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
+import akka.stream.scaladsl.Flow
 import akka.stream.typed.scaladsl.{ActorFlow, ActorSink, ActorSource}
-import org.slf4j.LoggerFactory
 import io.circe.Codec
 
 import scala.concurrent.duration._
 
-final class Routes()(using system: ActorSystem[_]) {
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  private val gameJoinedRef = system.systemActorOf(GameJoined(), "GameJoined")
+final class Routes(gameJoinedRef: ActorRef[GameJoined.Command])(using system: ActorSystem[_]) {
 
   def asRoute: Route =
     path("ws" / "game-joined") {

@@ -1,6 +1,7 @@
 package server
 
 import actors.gamejoined.GameJoined
+import actors.gameplaying.GamePlayingKeeper
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
@@ -24,15 +25,19 @@ object Server {
       prod <- ConfigReader.prodModeM
     } yield (p, h, prod))
 
+    val gamePlayingKeeperRef = system.systemActorOf(GamePlayingKeeper(), "GamePlayingKeeper")
+    val gameJoinedRef        = system.systemActorOf(GameJoined(gamePlayingKeeperRef), "GameJoined")
+
     val staticRoute = path(Segments) {
       case Nil => reject // skip to public/index.html
       case segments =>
         getFromResource(("public" +: segments).mkString("/"))
     } ~ getFromResource("public/index.html")
 
-    val gameJoinedRoutes = new Routes().asRoute
+    val gameJoinedRoutes  = new Routes(gameJoinedRef).asRoute
+    val gamePlayingRoutes = new server.gameplaying.Routes(gamePlayingKeeperRef).asRoute
 
-    val routes = gameJoinedRoutes ~ staticRoute
+    val routes = gameJoinedRoutes ~ gamePlayingRoutes ~ staticRoute
 
     val bindingFuture = Http()
       .newServerAt(host, port)

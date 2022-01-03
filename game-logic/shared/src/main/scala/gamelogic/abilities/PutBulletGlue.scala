@@ -12,7 +12,7 @@ final case class PutBulletGlue(time: Long, useId: Ability.UseId, casterId: Entit
     extends Ability
     with ZeroCostAbility {
 
-  val abilityId: Ability.AbilityId = Ability.putBulletGlue
+  val abilityId: Ability.AbilityId = Ability.putBulletGlueId
 
   val cooldown: Long = 20000
 

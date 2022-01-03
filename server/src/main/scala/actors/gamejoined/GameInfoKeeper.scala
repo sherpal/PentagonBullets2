@@ -8,6 +8,7 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.util.Timeout
 import gamelogic.abilities.Ability
 import gamelogic.entities.Entity.TeamId
+import models.menus.GameKeys.GameKey
 
 import scala.concurrent.Future
 
@@ -91,7 +92,7 @@ object GameInfoKeeper {
         case StartGame(requester) =>
           if gameInfo.isLeader(requester) && gameInfo.canStart then
             context.log.info("Game starting...")
-            connectionKeeper ! ConnectionKeeper.GameStarts(gameInfo, java.util.UUID.randomUUID())
+            connectionKeeper ! ConnectionKeeper.GameStarts(gameInfo, GameKey.random())
             clean(notificationRef, connectionKeeper)
           else
             context.log.warn(

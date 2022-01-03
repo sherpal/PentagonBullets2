@@ -36,7 +36,7 @@ object AbilityInfo {
       "Launch a smash bullet towards your mouse's position. This bullet has a shorter range as a normal bullet, but it grows overtime, passes through walls and if it hits an enemy, it removes half their remaining life."
     ),
     AbilityInfo(
-      putBulletGlue,
+      putBulletGlueId,
       "Bullet Glue",
       "Slows down all existing enemy bullets, as well as all created bullets for the next 5 seconds, by reducing their speed by 2."
     ),

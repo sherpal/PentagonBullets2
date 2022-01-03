@@ -1,6 +1,7 @@
 package frontend
 
 import frontend.Name.PlayerName
+import models.menus.GameKeys.GameKey
 
 sealed trait AppState[Next <: AppState[_, _], Args] {
   def next(args: Args): Next
@@ -26,7 +27,15 @@ object AppState {
     def failure(message: String): NameRequired = NameRequired(Some(message))
   }
 
-  case class GameJoined(name: PlayerName) extends AppState[NameRequired, Option[String]] {
+  case class GameJoined(name: PlayerName)
+      extends AppState[NameRequired | GameStarted, Option[String] | (PlayerName, GameKey)] {
+    def next(args: Option[String] | (PlayerName, GameKey)): NameRequired | GameStarted = args match {
+      case maybeErrorMessage: Option[String]          => NameRequired(maybeErrorMessage)
+      case (playerName: PlayerName, gameKey: GameKey) => GameStarted(playerName, gameKey)
+    }
+  }
+
+  case class GameStarted(name: PlayerName, gameKey: GameKey) extends AppState[NameRequired, Option[String]] {
     def next(maybeErrorMessage: Option[String]): NameRequired = NameRequired(maybeErrorMessage)
   }
 
