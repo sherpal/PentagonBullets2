@@ -30,7 +30,9 @@ final class GameAssetLoader(application: Application) {
   ).toList.distinct
 
   val $progressData: EventStream[ProgressData] = progressBus.events
-  val endedLoadingEvent: EventStream[Unit]     = endedBus.events
+
+  /** Emits once when all assets have been loaded. */
+  val endedLoadingEvent: EventStream[Unit] = endedBus.events
 
   // todo: handle errors when loading
   val loadAssets: ZIO[Any, Nothing, PartialFunction[Asset, LoaderResource]] = for {
@@ -61,9 +63,19 @@ final class GameAssetLoader(application: Application) {
 
 object GameAssetLoader {
 
+  /** Represents the completion percentage of the loading of all assets.
+    *
+    * @param completion
+    *   percentage (in [0, 100])
+    * @param assetName
+    *   name of the last asset that was loaded.
+    */
   final case class ProgressData private (completion: Double, assetName: String)
+
   private object ProgressData {
     def apply(completion: Double, assetName: String): ProgressData = new ProgressData(completion, assetName)
   }
+
+  def initial: ProgressData = ProgressData(0.0, "Starting...")
 
 }

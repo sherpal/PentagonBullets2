@@ -1,6 +1,7 @@
 package server.gamejoined
 
 import actors.gamejoined.*
+import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.*
 import akka.http.scaladsl.server.Directives.*
@@ -12,7 +13,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.typed.scaladsl.{ActorFlow, ActorSink, ActorSource}
 import io.circe.Codec
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 final class Routes(gameJoinedRef: ActorRef[GameJoined.Command])(using system: ActorSystem[_]) {
 
@@ -20,7 +21,7 @@ final class Routes(gameJoinedRef: ActorRef[GameJoined.Command])(using system: Ac
     path("ws" / "game-joined") {
       parameter("player-name").map(name => PlayerName(name)).apply { (playerName: PlayerName) =>
         handleWebSocketMessages(
-          webSocketService(
+          webSocketService[ClientToServer, ServerToClient, NotUsed](
             Flow[ClientToServer]
               .map(ConnectionActor.fromClientToServer)
               .via(

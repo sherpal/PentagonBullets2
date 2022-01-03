@@ -1,6 +1,8 @@
 package models.menus
 
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder}
+
+import scala.util.Try
 
 object GameKeys {
 
@@ -12,7 +14,10 @@ object GameKeys {
     def fromString(string: String): Either[Throwable, GameKey] =
       scala.util.Try(java.util.UUID.fromString(string)).toEither
 
-    given Codec[GameKey] = Codec[java.util.UUID]
+    given Codec[GameKey] = Codec.from(
+      Decoder[String].emapTry(str => Try(java.util.UUID.fromString(str))),
+      Encoder[String].contramap(_.toString)
+    )
   }
 
 }

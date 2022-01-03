@@ -4,6 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import gamecommunication.{ClientToServer, ServerToClient}
 import models.menus.PlayerName
+import gamelogic.gamestate.GameAction
 
 object ConnectionActor {
 
@@ -14,12 +15,14 @@ object ConnectionActor {
   case class Ping(sendingTime: Long) extends FromExternalWorld
   case object Ready extends FromExternalWorld
   case object ReadyToStart extends FromExternalWorld
+  case object Disconnect extends Command
+  case class GameActionWrapper(actions: List[GameAction]) extends FromExternalWorld
 
   def fromClientToServer(clientToServer: ClientToServer): FromExternalWorld = clientToServer match {
     case ClientToServer.Ping(sendingTime)              => Ping(sendingTime)
     case ClientToServer.Ready                          => Ready
     case ClientToServer.ReadyToStart(_)                => ReadyToStart
-    case ClientToServer.GameActionWrapper(gameActions) => ???
+    case ClientToServer.GameActionWrapper(gameActions) => GameActionWrapper(gameActions)
   }
 
   type OuterWorldRef = ActorRef[ServerToClient | server.websockethelpers.PoisonPill]

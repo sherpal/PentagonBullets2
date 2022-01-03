@@ -19,6 +19,6 @@ object GamePlaying {
     receiver(gameKey, gameInfo)
   }
 
-  private def receiver(gameKey: GameKey, gameInfo: GameJoinedInfo): Behavior[Command] = ???
+  private def receiver(gameKey: GameKey, gameInfo: GameJoinedInfo): Behavior[Command] = Behaviors.ignore
 
 }

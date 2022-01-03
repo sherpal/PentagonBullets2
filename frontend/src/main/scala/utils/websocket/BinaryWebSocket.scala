@@ -13,7 +13,7 @@ import boopickle.Default.*
 
 import java.nio.ByteBuffer
 import scala.scalajs.js.JSConverters.*
-import scala.scalajs.js.typedarray.ArrayBuffer
+import scala.scalajs.js.typedarray.{ArrayBuffer, Uint8Array}
 import scala.scalajs.js.typedarray.TypedArrayBufferOps.*
 import scala.scalajs.js.typedarray.TypedArrayBuffer
 
@@ -31,7 +31,11 @@ final class BinaryWebSocket[In, Out] private (
 ) {
   private def url: String = "ws://" + host + "/ws/" + path
 
-  private lazy val socket = new WebSocket(url)
+  private lazy val socket = {
+    val s = new WebSocket(url)
+    s.binaryType = "arraybuffer"
+    s
+  }
 
   private val inBus: EventBus[In]           = new EventBus
   private val outBus: EventBus[Out]         = new EventBus
@@ -43,9 +47,10 @@ final class BinaryWebSocket[In, Out] private (
     for {
       webSocket <- UIO(socket)
       _ <- UIO {
+        val unpickler = Unpickle[In]
         webSocket.onmessage = (event: MessageEvent) =>
           inBus.writer.onNext(
-            Unpickle[In].fromBytes(TypedArrayBuffer.wrap(event.data.asInstanceOf[ArrayBuffer]))
+            unpickler.fromBytes(TypedArrayBuffer.wrap(event.data.asInstanceOf[ArrayBuffer]))
           )
       }
       _ <- UIO {

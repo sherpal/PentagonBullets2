@@ -115,7 +115,10 @@ object GameJoinedComponent {
       },
       child <-- gameStartsEvents.map { case ServerToClient.GameStarts(info, gameKey) =>
         div(info.toString, br(), gameKey.toString)
-      }
+      },
+      gameStartsEvents
+        .delay(2000)
+        .map(gameStartsInfo => GameStarted(gameStartsInfo.playerInfo, gameStartsInfo.gameKey)) --> stateChanger
     )
   }
 

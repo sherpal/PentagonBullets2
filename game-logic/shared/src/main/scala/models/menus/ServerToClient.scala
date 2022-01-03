@@ -1,6 +1,6 @@
 package models.menus
 
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import models.menus.GameKeys.GameKey
 
@@ -14,10 +14,14 @@ object ServerToClient {
   /** Sent to each player with their personal info when the game starts. */
   case class GameStarts(playerInfo: PlayerInfo, gameKey: GameKey) extends ServerToClient
 
+  private val gameInfoWrapperEncoder = deriveEncoder[GameInfoWrapper]
+  private val gameStartEncoder       = deriveEncoder[GameStarts]
+  private val heartbeatEncoder       = Encoder.instance[Heartbeat.type](hb => Json.fromString(hb.toString))
+
   private val encoder: Encoder[ServerToClient] = Encoder.instance {
-    case msg: GameInfoWrapper => deriveEncoder[GameInfoWrapper].apply(msg)
-    case msg: GameStarts      => deriveEncoder[GameStarts].apply(msg)
-    case Heartbeat            => Json.fromString(Heartbeat.toString)
+    case msg: GameInfoWrapper => gameInfoWrapperEncoder(msg)
+    case msg: GameStarts      => gameStartEncoder(msg)
+    case Heartbeat            => heartbeatEncoder(Heartbeat)
   }
 
   private val decoder: Decoder[ServerToClient] = List[Decoder[ServerToClient]](

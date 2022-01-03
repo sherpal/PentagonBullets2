@@ -1,19 +1,22 @@
 package server.gameplaying
 
 import akka.actor.typed.{ActorRef, ActorSystem}
-import actors.gameplaying.{GamePlaying, GamePlayingKeeper}
+import actors.gameplaying.{ConnectionActor, GamePlaying, GamePlayingKeeper}
+import akka.NotUsed
+import akka.stream.scaladsl.Flow
 import akka.http.scaladsl.model.*
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
 import models.menus.GameKeys.GameKey
-import models.menus.{ClientToServer, GameJoinedInfo, PlayerName, ServerToClient}
+import models.menus.{GameJoinedInfo, PlayerName}
 import org.slf4j.LoggerFactory
-import server.websockethelpers.{flowThroughActor, heartbeat, webSocketService, PoisonPill}
-import akka.actor.typed.scaladsl.AskPattern._
+import server.websockethelpers.{binaryWebSocketService, flowThroughActor, heartbeat, PoisonPill}
+import akka.actor.typed.scaladsl.AskPattern.*
 import akka.util.Timeout
-import scala.concurrent.duration._
+import gamecommunication.{ClientToServer, ServerToClient}
 
+import scala.concurrent.duration.*
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -39,9 +42,27 @@ final class Routes(gamePlayingKeeperRef: ActorRef[GamePlayingKeeper.Command])(us
               complete(StatusCodes.InternalServerError)
             case Success(None) =>
               complete(StatusCodes.NotFound, "Game key did not match")
-            case Success(Some(ref)) =>
-              logger.info(s"New connection for game $gameKey")
-              handleWebSocketMessages(???)
+            case Success(Some(gamePlayingRef)) =>
+              logger.info(s"New connection for game $gameKey ($playerName)")
+              handleWebSocketMessages(
+                binaryWebSocketService[ClientToServer, ServerToClient, NotUsed](
+                  Flow[ClientToServer]
+                    .map(ConnectionActor.fromClientToServer)
+                    .via(
+                      flowThroughActor(
+                        (ref: ActorRef[ServerToClient | PoisonPill]) =>
+                          ConnectionActor(playerName, gamePlayingRef, ref),
+                        s"ConnectionActor${java.util.UUID.randomUUID()}",
+                        ConnectionActor.Disconnect,
+                        error => {
+                          logger.error("Error in actor flow", error)
+                          ConnectionActor.Disconnect
+                        }
+                      )
+                    )
+                    .merge(heartbeat(ServerToClient.Heartbeat, 5.seconds))
+                )
+              )
           }
       }
     }

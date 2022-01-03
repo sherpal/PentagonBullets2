@@ -38,21 +38,19 @@ object ConnectionKeeper {
         parent ! GameInfoKeeper.SendGameInfoTo(context.self, GameInfoUpdate.apply)
         receiver(parent, connectedChildren = connectedChildren + (playerName -> ref))
       case ConnectionDied(playerName) =>
-        context.log.info(s"Connection died: ${playerName.name}")
+        if connectedChildren contains playerName then context.log.info(s"Connection died: ${playerName.name}")
         receiver(parent, connectedChildren = connectedChildren - playerName)
       case GameStarts(gameJoinedInfo, gameKey) =>
         parent ! GameJoined.GameStarts(gameJoinedInfo, gameKey)
-        connectedChildren.foreach { (playerName, ref) =>
-          val info = gameJoinedInfo.players(playerName) // cowboy style
-          ref ! ConnectionActor.GameStarts(info, gameKey)
-        }
         Behaviors.same
       case GameReady(gameJoinedInfo, gameKey) =>
+        context.log.info(s"Game ready ($gameKey)")
         connectedChildren.foreach { (playerName, ref) =>
           val info = gameJoinedInfo.players(playerName) // cowboy style
           ref ! ConnectionActor.GameStarts(info, gameKey)
         }
-        ???
+        context.log.info("All players have been warned, resetting...")
+        apply(parent) // reset to original position, it is no more our problem.
     }
   }
 }

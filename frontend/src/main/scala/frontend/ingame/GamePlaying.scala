@@ -1,21 +1,28 @@
 package frontend.ingame
 
+import assets.{Asset, GameAssetLoader}
 import com.raquo.laminar.api.L.*
 import frontend.AppState.{AnyAppState, GameStarted}
+import game.synchronizeClock
 import gamecommunication.ClientToServer.Ping
 import gamecommunication.ServerToClient.Pong
 import gamecommunication.{ClientToServer, ServerToClient}
+import gamelogic.entities.Entity
 import models.menus.GameKeys.GameKey
 import models.menus.PlayerName
-import utils.websocket.BinaryWebSocket
+import typings.pixiJs.PIXI.LoaderResource
+import urldsl.errors.DummyError
 import urldsl.language.dummyErrorImpl.*
 import urldsl.vocabulary.{FromString, Printer}
-import urldsl.errors.DummyError
-import zio.*
 import utils.laminarzio.Implicits.*
-import game.synchronizeClock
-import gamelogic.entities.Entity
+import utils.laminarzio.onMountZIO
+import utils.websocket.BinaryWebSocket
+import zio.*
 import zio.duration.*
+import typings.pixiJs.anon.Antialias as ApplicationOptions
+import typings.pixiJs.mod.Application
+
+import scala.scalajs.js.JSON
 
 object GamePlaying {
 
@@ -28,7 +35,19 @@ object GamePlaying {
 
   def apply(gameStarted: GameStarted, stateChanger: Observer[AnyAppState]) = {
 
-    def playerName: PlayerName = PlayerName(gameStarted.name.value)
+    val application: Application = new Application(
+      ApplicationOptions()
+        .setBackgroundColor(0x1099bb)
+        .setWidth(1200)
+        .setHeight(800)
+    )
+    val loader = new GameAssetLoader(application)
+
+    val assetMap: Var[Option[PartialFunction[Asset, LoaderResource]]] = Var(Option.empty)
+
+    val allAssetsLoaded = loader.endedLoadingEvent
+
+    def playerName: PlayerName = gameStarted.playerName
     def gameKey: GameKey       = gameStarted.gameKey
 
     val timeDelta: Var[Option[Long]] = Var(Option.empty)
@@ -52,15 +71,26 @@ object GamePlaying {
       pong <- pongFiber.join
     } yield pong
 
-    def synchronize(using Owner) = synchronizeClock(sendPing) zipParLeft zio.clock.sleep(2.second)
+    def synchronize(using Owner) = synchronizeClock(sendPing, 100) zipParLeft zio.clock.sleep(2.second)
 
     div(
       "We are in!",
       ul(
         li("Connecting to server..."),
+        child <-- socket.$error.map(event => li(s"Socket error! ${JSON.stringify(event)}")),
         child <-- socket.$open.map(_ => li("Connected. Synchronizing clocks...")),
-        child <-- timeDeltaChanges.map(delta => li(s"Clock synchronized (delta: $delta). Loading assets.")),
-        child <-- myEntityIdEvents.map(id => li(s"Received my entity id [$id]."))
+        child <-- timeDeltaChanges.map(delta => li(s"Clock synchronized (delta: $delta).")),
+        child <-- myEntityIdEvents.map(id => li(s"Received my entity id [$id].")),
+        child <-- loader.$progressData.startWith(GameAssetLoader.initial).map { data =>
+          val completion = scala.math.round(data.completion)
+          val assetName  = data.assetName
+          li(
+            "Asset Loading Status:",
+            Option.when(completion < 100)(progress(value := completion.toString)),
+            s" ${completion.toInt}%, ($assetName)"
+          )
+        },
+        child <-- allAssetsLoaded.map(_ => li("All assets have been properly loaded."))
       ),
       onMountCallback { context =>
         given Owner = context.owner
@@ -68,7 +98,10 @@ object GamePlaying {
 
         socket.$open.flatMap(_ => synchronize).foreach(delta => timeDelta.set(Some(delta.toLong)))
       },
-      timeDeltaChanges.map(_ => ClientToServer.Ready) --> socket
+      onMountZIO(
+        loader.loadAssets.asSome.tap(assets => ZIO.effectTotal(assetMap.set(assets))).unit
+      ),
+      (timeDeltaChanges.combineWith(allAssetsLoaded)).map(_ => ClientToServer.Ready) --> socket
     )
   }
 

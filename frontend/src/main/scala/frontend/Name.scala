@@ -6,7 +6,7 @@ object Name {
   object PlayerName {
     extension (name: PlayerName) def value: String = name: String
 
-    val forbiddenCharacters: List[Char] = List(' ', '?', '!', '#', '<', '>')
+    val forbiddenCharacters: List[Char] = List(' ', '?', '!', '#', '<', '>', '[', ']', '@')
 
     def apply(name: String): Either[String, PlayerName] = {
       val errorMessage =

@@ -74,6 +74,7 @@ object ConnectionActor {
 
       Behaviors.receiveMessage {
         case msg: ForExternalWorld =>
+          if msg.isInstanceOf[GameStarts] then context.log.info("Game starts")
           outerWorld ! msg.forward
           Behaviors.same
         case PlayerNameAlreadyConnected() =>

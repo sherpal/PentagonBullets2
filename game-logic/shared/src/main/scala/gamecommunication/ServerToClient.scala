@@ -8,6 +8,8 @@ sealed trait ServerToClient
 
 object ServerToClient {
 
+  case object Heartbeat extends ServerToClient
+
   case class Pong(originalSendingTime: Long, midwayDistantTime: Long) extends ServerToClient
 
   case class RemoveActions(oldestTime: Long, idsOfActionsToRemove: List[GameAction.Id]) extends ServerToClient
@@ -26,5 +28,6 @@ object ServerToClient {
     .addConcreteType[RemoveActions]
     .addConcreteType[AddAndRemoveActions]
     .addConcreteType[YourEntityIdIs]
+    .addConcreteType[Heartbeat.type]
 
 }
