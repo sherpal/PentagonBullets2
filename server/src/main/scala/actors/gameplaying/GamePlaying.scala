@@ -3,6 +3,7 @@ package actors.gameplaying
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import gamecommunication.ServerToClient
+import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.utils.IdGeneratorContainer
 import models.menus.{GameJoinedInfo, PlayerName}
 import models.menus.GameKeys.GameKey
@@ -18,7 +19,11 @@ import gamelogic.gamestate.gameactions.NewPlayer
 object GamePlaying {
   sealed trait Command
 
-  case class PlayerConnected(playerName: PlayerName, ref: ActorRef[ConnectionActor.ForExternalWorld]) extends Command
+  case class PlayerConnected(
+      playerName: PlayerName,
+      ref: ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]
+  ) extends Command
+  case class PlayerIsReady(playerName: PlayerName) extends Command
   private case object GameMasterDied extends Command
 
   def apply(gameKey: GameKey, gameInfo: GameJoinedInfo): Behavior[Command] = Behaviors.setup[Command] { context =>
@@ -32,34 +37,67 @@ object GamePlaying {
     receiver(initInfo(gameKey, gameInfo))
   }
 
+  private case class GameMasterInfo(
+      idGeneratorContainer: IdGeneratorContainer,
+      initialGameState: GameState,
+      firstActions: List[GameAction]
+  ) {
+    def gameMaster(
+        players: Map[PlayerName, ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]]
+    ): Behavior[GameMaster.Command] =
+      GameMaster(idGeneratorContainer, initialGameState, firstActions, players)
+  }
+
   private case class ReceiverInfo(
       gameKey: GameKey,
       gameInfo: GameJoinedInfo,
-      players: Map[PlayerName, ActorRef[ConnectionActor.ForExternalWorld]]
+      players: Map[PlayerName, ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]],
+      readyPlayers: Set[PlayerName],
+      maybeGameMasterInfo: Option[GameMasterInfo]
   ) {
-    def playerConnected(name: PlayerName, ref: ActorRef[ConnectionActor.ForExternalWorld]): ReceiverInfo =
+    def playerConnected(
+        name: PlayerName,
+        ref: ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]
+    ): ReceiverInfo =
       copy(players = players + (name -> ref))
 
     def areAllPlayersConnected: Boolean = gameInfo.allPlayerNames == players.keySet
 
     def intializedInfo(gameMasterRef: ActorRef[GameMaster.Command]): GameInitialisedInfo =
       GameInitialisedInfo(gameKey, gameInfo, players, gameMasterRef)
+
+    def playerIsReady(playerName: PlayerName): ReceiverInfo = copy(readyPlayers = readyPlayers + playerName)
+
+    def areAllPlayersReady: Boolean = gameInfo.allPlayerNames == readyPlayers
+
+    def withGameMasterInfo(info: GameMasterInfo): ReceiverInfo = copy(maybeGameMasterInfo = Some(info))
   }
 
   private def initInfo(gameKey: GameKey, gameInfo: GameJoinedInfo): ReceiverInfo =
-    ReceiverInfo(gameKey, gameInfo, Map.empty)
+    ReceiverInfo(gameKey, gameInfo, Map.empty, Set.empty, Option.empty)
 
   private def receiver(info: ReceiverInfo): Behavior[Command] = Behaviors.receive { (context, command) =>
+    def players = info.players
     command match {
+      case PlayerIsReady(playerName) =>
+        val newInfo = info.playerIsReady(playerName)
+
+        if newInfo.areAllPlayersReady then
+          val gameMasterInfo = newInfo.maybeGameMasterInfo.get // safe here
+
+          val gameMasterRef = context.spawn(gameMasterInfo.gameMaster(players), "GameMaster")
+          context.watchWith(gameMasterRef, GameMasterDied)
+
+          gameInitialised(newInfo.intializedInfo(gameMasterRef))
+        else receiver(newInfo)
       case PlayerConnected(playerName, ref) =>
         val newInfo = info.playerConnected(playerName, ref)
         if newInfo.areAllPlayersConnected then
           implicit val idGeneratorContainer: IdGeneratorContainer = IdGeneratorContainer.initialIdGeneratorContainer
-          val (initialGameState, firstActions)                    = newInfo.gameInfo.initializeGameState
-          val players                                             = newInfo.players
-          val gameMasterRef =
-            context.spawn(GameMaster(idGeneratorContainer, initialGameState, firstActions, players), "GameMaster")
-          context.watchWith(gameMasterRef, GameMasterDied)
+
+          val (initialGameState, firstActions) = newInfo.gameInfo.initializeGameState
+
+          val players = newInfo.players
 
           val playersIdsByName = firstActions.collect { case newPlayer: NewPlayer =>
             PlayerName(newPlayer.player.name) -> newPlayer.player.id
@@ -72,8 +110,7 @@ object GamePlaying {
               )
             )
           }
-
-          gameInitialised(newInfo.intializedInfo(gameMasterRef))
+          receiver(info.withGameMasterInfo(GameMasterInfo(idGeneratorContainer, initialGameState, firstActions)))
         else receiver(newInfo)
       case GameMasterDied => Behaviors.unhandled
     }

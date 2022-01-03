@@ -22,4 +22,6 @@ final class GameStateManager(
     resources: PartialFunction[Asset, LoaderResource]
 )(implicit owner: Owner) {
   println("Game State Manager initialized")
+
+  actionsFromServerEvents.foreach(msg => println(msg.actionsToAdd.mkString("\n")))
 }

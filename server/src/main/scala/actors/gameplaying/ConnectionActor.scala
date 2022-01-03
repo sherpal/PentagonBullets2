@@ -68,8 +68,9 @@ object ConnectionActor {
     }
 
   private def playerIsReady(behaviorArgs: BehaviorArgs): Behavior[Command] = Behaviors.receive { (context, command) =>
-    val playerName = behaviorArgs.playerName
-    val outerWorld = behaviorArgs.outerWorld
+    val playerName     = behaviorArgs.playerName
+    val outerWorld     = behaviorArgs.outerWorld
+    val gamePlayingRef = behaviorArgs.gamePlayingRef
     command match {
       case msg: ForExternalWorld =>
         outerWorld ! msg.forward
@@ -78,7 +79,8 @@ object ConnectionActor {
         Behaviors.stopped
       case ReadyToStart =>
         context.log.info(s"Player $playerName is ready to start!")
-        ???
+        gamePlayingRef ! GamePlaying.PlayerIsReady(playerName)
+        Behaviors.same
       case HereIsTheGameMaster(gameMasterRef) =>
         gameMasterIsKnown(gameMasterRef, behaviorArgs)
       case _ =>
