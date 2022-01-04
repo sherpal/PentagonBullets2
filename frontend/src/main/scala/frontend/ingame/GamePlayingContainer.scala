@@ -62,7 +62,6 @@ object GamePlayingContainer {
       } yield ()
 
     def mountEffect(container: dom.Element)(implicit owner: Owner) = for {
-      _            <- ZIO.unit
       controls     <- services.localstorage.controls.retrieveControls
       userControls <- UIO(new UserControls(new Keyboard(controls), new Mouse(application.view, controls)))
       stage        <- UIO(new ReactiveStage(application))

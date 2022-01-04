@@ -3,16 +3,19 @@ package gamelogic.entities.concreteentities
 import be.doeraene.physics.Complex
 import be.doeraene.physics.shape.{Polygon, Shape}
 import gamelogic.entities.{Body, Entity}
+import utils.misc.RGBColour
 
 /** An Obstacle is something in the Game Area that people and bullets can't cross.
   */
-final case class Obstacle(id: Entity.Id, xPos: Double, yPos: Double, shape: Shape) extends Body {
+final case class Obstacle(id: Entity.Id, xPos: Double, yPos: Double, shape: Polygon) extends Body {
 
   val rotation: Double = 0.0
 
   val pos: Complex = Complex(xPos, yPos)
 
   def time: Long = 0L
+
+  def colour: RGBColour = RGBColour.white
 
 }
 

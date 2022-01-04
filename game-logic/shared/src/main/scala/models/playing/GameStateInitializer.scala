@@ -5,6 +5,7 @@ import gamelogic.entities.concreteentities.{GameArea, Player}
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.utils.IdGeneratorContainer
 import models.menus.GameJoinedInfo
+import _root_.utils.misc.RGBColour
 
 object GameStateInitializer {
 
@@ -22,7 +23,7 @@ object GameStateInitializer {
 
     val createCenterSquare = gameArea.createCenterSquare(centerOctagonRadius, ServerSource)
 
-    val newPlayerActions = players.values.toList.map(gameArea.createPlayer)
+    val newPlayerActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
 
     val gameStateAfterNewPlayers: GameState = createCenterSquare(initialGameState).applyActions(newPlayerActions)
 

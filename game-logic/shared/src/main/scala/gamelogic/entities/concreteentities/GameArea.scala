@@ -10,6 +10,7 @@ import gamelogic.gamestate.gameactions.{NewObstacle, NewPlayer, TranslatePlayer}
 import gamelogic.utils.{EntityIdGenerator, IdGeneratorContainer}
 import gamelogic.utils.Time
 import models.menus.PlayerInfo
+import _root_.utils.misc.RGBColour
 
 class GameArea(val width: Int = 1000, val height: Int = 800) {
 
@@ -72,7 +73,9 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
     NewObstacle(GameAction.newId(), Time.currentTime(), Entity.newId(), Complex(0, 0), vertices, source)
   }
 
-  def createPlayer(playerInfo: PlayerInfo)(implicit idGeneratorContainer: IdGeneratorContainer): NewPlayer = {
+  def createPlayer(playerInfo: PlayerInfo, colour: RGBColour)(implicit
+      idGeneratorContainer: IdGeneratorContainer
+  ): NewPlayer = {
     val player = Player(
       Entity.newId(),
       playerInfo.teamId,
@@ -80,7 +83,8 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
       playerInfo.name.name,
       allowedAbilities = playerInfo.allowedAbilities,
       relevantUsedAbilities = Map.empty,
-      energy = Player.maxEnergy
+      energy = Player.maxEnergy,
+      colour = colour
     )
     NewPlayer(GameAction.newId(), player, Time.currentTime(), ServerSource)
   }

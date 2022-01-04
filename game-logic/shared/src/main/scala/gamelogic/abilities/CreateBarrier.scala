@@ -3,6 +3,7 @@ package gamelogic.abilities
 import be.doeraene.physics.Complex
 import gamelogic.entities.Entity
 import gamelogic.entities.ActionSource.AbilitySource
+import gamelogic.entities.Entity.TeamId
 import gamelogic.gamestate.gameactions.NewBarrier
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.entities.concreteentities.Barrier
@@ -12,7 +13,7 @@ final case class CreateBarrier(
     time: Long,
     useId: Ability.UseId,
     casterId: Entity.Id,
-    teamId: Int,
+    teamId: TeamId,
     targetPos: Complex,
     rotation: Double
 ) extends Ability

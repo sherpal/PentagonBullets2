@@ -29,19 +29,33 @@ object RGBColour {
 
   implicit def asRGBA(rgb: RGBColour): RGBAColour = rgb.withAlpha(1.0)
 
-  val black        = RGBColour.fromIntColour(0)
-  val white        = RGBColour.fromIntColour(0xFFFFFF)
-  val red          = RGBColour.fromIntColour(0xFF0000)
-  val green        = RGBColour.fromIntColour(0x00FF00)
-  val blue         = RGBColour.fromIntColour(0x0000FF)
-  val yellow       = RGBColour.fromIntColour(0xFFFF00)
-  val fuchsia      = RGBColour.fromIntColour(0xFF00FF)
-  val aqua         = RGBColour.fromIntColour(0x00FFFF)
-  val gray         = RGBColour.fromIntColour(0xC0C0C0)
-  val orange       = RGBColour.fromIntColour(0xFF9900)
-  val brown        = RGBColour.fromIntColour(0x996633)
-  val lightGreen   = RGBColour.fromIntColour(0x00cc99)
-  val electricBlue = RGBColour.fromIntColour(0x6666ff)
+  val black: RGBColour        = RGBColour.fromIntColour(0)
+  val white: RGBColour        = RGBColour.fromIntColour(0xffffff)
+  val red: RGBColour          = RGBColour.fromIntColour(0xff0000)
+  val green: RGBColour        = RGBColour.fromIntColour(0x00ff00)
+  val blue: RGBColour         = RGBColour.fromIntColour(0x0000ff)
+  val yellow: RGBColour       = RGBColour.fromIntColour(0xffff00)
+  val fuchsia: RGBColour      = RGBColour.fromIntColour(0xff00ff)
+  val aqua: RGBColour         = RGBColour.fromIntColour(0x00ffff)
+  val gray: RGBColour         = RGBColour.fromIntColour(0xc0c0c0)
+  val orange: RGBColour       = RGBColour.fromIntColour(0xff9900)
+  val brown: RGBColour        = RGBColour.fromIntColour(0x996633)
+  val lightGreen: RGBColour   = RGBColour.fromIntColour(0x00cc99)
+  val electricBlue: RGBColour = RGBColour.fromIntColour(0x6666ff)
+
+  val someColoursForPlayers: Vector[RGBColour] = Vector(
+    red,
+    green,
+    yellow,
+    fuchsia,
+    aqua,
+    orange,
+    lightGreen,
+    electricBlue,
+    gray
+  )
+
+  val coloursForPlayers: LazyList[RGBColour] = LazyList.continually(someColoursForPlayers).flatten
 
   val someColours: Vector[RGBColour] = Vector(
     red,

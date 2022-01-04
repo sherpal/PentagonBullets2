@@ -5,14 +5,16 @@ import gamelogic.abilities.Ability
 import be.doeraene.physics.shape.{Polygon, Shape}
 import gamelogic.abilities.Ability.UseId
 import gamelogic.entities.*
+import gamelogic.entities.Entity.TeamId
 import gamelogic.entities.WithPosition.Angle
 import gamelogic.entities.Resource.ResourceAmount
+import utils.misc.RGBColour
 
 /** A Player represents a Human player.
   */
 final case class Player(
     id: Entity.Id,
-    team: Int,
+    team: TeamId,
     time: Long,
     name: String,
     pos: Complex = 0,
@@ -24,7 +26,8 @@ final case class Player(
     lifeTotal: Double = 100,
     allowedAbilities: List[Ability.AbilityId],
     relevantUsedAbilities: Map[Ability.UseId, Ability],
-    energy: Double
+    energy: Double,
+    colour: RGBColour
 ) extends MovingBody
     with Living
     with WithAbilities {

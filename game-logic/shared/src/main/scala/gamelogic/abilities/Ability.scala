@@ -3,7 +3,7 @@ package gamelogic.abilities
 import gamelogic.entities.Resource.ResourceAmount
 import gamelogic.entities.{Entity, Resource, WithAbilities}
 import gamelogic.gamestate.{GameAction, GameState}
-import gamelogic.utils.IdGeneratorContainer
+import gamelogic.utils.{AbilityUseIdGenerator, IdGeneratorContainer}
 import io.circe.{Decoder, Encoder, Json}
 
 import scala.annotation.tailrec
@@ -92,6 +92,9 @@ trait Ability {
   final def canBeCastBoolean(gameState: GameState, time: Long): Boolean =
     canBeCast(gameState, time).isEmpty
 
+  /** Alias for [[canBeCastBoolean]] */
+  @inline final def isLegal(gameState: GameState, time: Long): Boolean = canBeCastBoolean(gameState, time)
+
 }
 
 object Ability {
@@ -99,41 +102,48 @@ object Ability {
   opaque type UseId = Long
 
   object UseId {
-    extension (useId: UseId) @inline def toLong: Long = useId: Long
+    implicit final class UserIdExtension(useId: UseId) {
+      @inline def toLong: Long = useId: Long
+    }
 
     def apply(long: Long): UseId = long
 
     def initial: UseId = 0L
   }
 
+  def nextUseId()(implicit useIdGenerator: AbilityUseIdGenerator): UseId = useIdGenerator.nextId()
+
   opaque type AbilityId = Int
 
   object AbilityId {
-    extension (id: AbilityId) def toInt: Int = id: Int
+    implicit final class AbilityIdExtension(abilityId: AbilityId) {
+      @inline def toInt: Int = abilityId: Int
+    }
 
     def fromInt(intId: Int): Option[AbilityId] = Option.when(intId <= lastAbilityId && 0 <= intId)(intId)
   }
-  private var lastAbilityId: AbilityId   = 0
-  def maxAbilityId: AbilityId            = lastAbilityId
-  private def nextAbilityId(): AbilityId = { lastAbilityId += 1; lastAbilityId }
+  private var lastAbilityId: AbilityId                       = 0
+  def maxAbilityId: AbilityId                                = lastAbilityId
+  private def nextAbilityId[A <: Ability](): AbilityIdFor[A] = { lastAbilityId += 1; lastAbilityId }
+
+  type AbilityIdFor[A <: Ability] = AbilityId
 
   def abilityIdCount: AbilityId = lastAbilityId
 
-  val activateShieldId: AbilityId        = nextAbilityId()
-  val bigBulletId: AbilityId             = nextAbilityId()
-  val craftGunTurretId: AbilityId        = nextAbilityId()
-  val createBarrierId: AbilityId         = nextAbilityId()
-  val createBulletAmplifierId: AbilityId = nextAbilityId()
-  val createHealingZoneId: AbilityId     = nextAbilityId()
-  val laserId: AbilityId                 = nextAbilityId()
-  val launchSmashBulletId: AbilityId     = nextAbilityId()
-  val putBulletGlueId: AbilityId         = nextAbilityId()
-  val teleportationId: AbilityId         = nextAbilityId()
-  val tripleBulletId: AbilityId          = nextAbilityId()
+  val activateShieldId: AbilityIdFor[ActivateShield]               = nextAbilityId()
+  val bigBulletId: AbilityIdFor[BigBullet]                         = nextAbilityId()
+  val craftGunTurretId: AbilityIdFor[CraftGunTurret]               = nextAbilityId()
+  val createBarrierId: AbilityIdFor[CreateBarrier]                 = nextAbilityId()
+  val createBulletAmplifierId: AbilityIdFor[CreateBulletAmplifier] = nextAbilityId()
+  val createHealingZoneId: AbilityIdFor[CreateHealingZone]         = nextAbilityId()
+  val laserId: AbilityIdFor[LaserAbility]                          = nextAbilityId()
+  val launchSmashBulletId: AbilityIdFor[LaunchSmashBullet]         = nextAbilityId()
+  val putBulletGlueId: AbilityIdFor[PutBulletGlue]                 = nextAbilityId()
+  val teleportationId: AbilityIdFor[Teleportation]                 = nextAbilityId()
+  val tripleBulletId: AbilityIdFor[TripleBullet]                   = nextAbilityId()
 
   val allAbilityIds: Vector[AbilityId] = (1 to maxAbilityId).toVector
 
-  def nonShieldAbilityIds: List[AbilityId] =
-    allAbilityIds.toList.filterNot(_ == activateShieldId)
+  def nonShieldAbilityIds: List[AbilityId] = allAbilityIds.toList.filterNot(_ == activateShieldId)
 
 }

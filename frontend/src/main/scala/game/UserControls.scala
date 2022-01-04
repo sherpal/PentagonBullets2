@@ -10,8 +10,8 @@ import typings.std.MouseEvent
   */
 final class UserControls(keyboard: Keyboard, mouse: Mouse) {
 
-  val downInputs = EventStream.merge(keyboard.downUserInputEvents, mouse.downUserInputEvents)
-  val upInputs   = EventStream.merge(keyboard.upUserInputEvents, mouse.upUserInputEvents)
+  val downInputs: EventStream[UserInput] = EventStream.merge(keyboard.downUserInputEvents, mouse.downUserInputEvents)
+  val upInputs: EventStream[UserInput]   = EventStream.merge(keyboard.upUserInputEvents, mouse.upUserInputEvents)
 
   val $pressedUserInput: Signal[Set[UserInput]] =
     EventStream

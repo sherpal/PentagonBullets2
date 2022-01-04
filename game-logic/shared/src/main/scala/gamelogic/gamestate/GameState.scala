@@ -60,6 +60,8 @@ final class GameState(
   def started: Boolean = startTime.isDefined
   def ended: Boolean   = endTime.isDefined
 
+  def isPlaying: Boolean = started && !ended
+
   def starts(time: Long, bounds: Polygon): GameState = copy(newTime = time, startTime = Some(time), gameBounds = bounds)
 
   def ends(time: Long): GameState = copy(newTime = time, endTime = Some(time))
@@ -106,6 +108,10 @@ final class GameState(
     */
   def entityByIdAs[T <: Entity](entityId: Entity.Id)(using ClassTag[T]): Option[T] =
     entities.get(entityId).collect(filterT[T])
+
+  /** Returns whether that [[Entity.Id]] exists as is of this particular type of [[Entity]]. */
+  def entityIdExistsAs[T <: Entity](entityId: Entity.Id)(using ClassTag[T]): Boolean =
+    entityByIdAs[T](entityId).isDefined
 
   /** Creates a Map from entity id to the corresponding entity, but only for those of type `T`.
     */
@@ -161,5 +167,13 @@ final class GameState(
       case barrier: Barrier if barrier.teamId != playerTeam => barrier
       case obstacle: Obstacle                               => obstacle
     }
+
+  def allTPassiveBuffs[T <: PassiveBuff](using ClassTag[T]): Iterable[T] =
+    passiveBuffs.values.flatMap(_.values.collect { case t: T => t })
+
+  def passiveBuffsById: Map[Buff.Id, PassiveBuff] = passiveBuffs.values.flatten.toMap
+
+  def passiveTBuffsById[T <: PassiveBuff](using ClassTag[T]): Map[Buff.Id, T] =
+    passiveBuffsById.collect { case (id, t: T) => (id, t) }
 
 }
