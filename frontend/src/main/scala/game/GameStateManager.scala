@@ -2,6 +2,7 @@ package game
 
 import com.raquo.laminar.api.A.*
 import gamelogic.entities.Entity
+import gamelogic.entities.concreteentities.Player
 import game.ui.reactivepixi.ReactiveStage
 import gamelogic.gamestate.GameState
 import gamecommunication.ServerToClient.AddAndRemoveActions
@@ -18,6 +19,7 @@ import gamelogic.entities.WithPosition.Angle
 import models.playing.UserInput
 import gamelogic.abilities.Ability
 import utils.pixi.monkeypatching.PIXIPatching.TickerWithDoubleAdd
+import gamelogic.entities.ActionSource.PlayerSource
 
 import scala.scalajs.js.timers.{setInterval, setTimeout}
 import scala.scalajs.js
@@ -112,7 +114,108 @@ final class GameStateManager(
 
   private var lastTimeStamp = org.scalajs.dom.window.performance.now()
 
-  private val ticker = (_: Double) => {}
+  private val tickerBus: EventBus[Any]  = new EventBus
+  private val timeToDraw: EventBus[Any] = new EventBus
+
+  private val gameStateAndMousePosTickerEvents: EventStream[(GameState, Complex, Set[UserInput])] =
+    tickerBus.events.sample($gameStates, $gameMousePosition, userControls.$pressedUserInput)
+
+  private val gameStateMaybePlayerAndMousePosTickerEvents
+      : EventStream[(GameState, Option[Player], Complex, Set[UserInput])] =
+    gameStateAndMousePosTickerEvents
+      .map((gameState, mousePos, pressedKeys) =>
+        (gameState, gameState.entityByIdAs[Player](playerId), mousePos, pressedKeys)
+      )
+
+  def movePlayer(
+      gameState: GameState,
+      time: Long,
+      dt: Double,
+      mousePos: Complex,
+      player: Player,
+      headingTo: Complex
+  ): UpdatePlayerPos = {
+    val rotation            = (mousePos - player.pos).arg
+    val (moving, direction) = if headingTo == Complex.zero then (false, 0.0) else (true, headingTo.arg)
+    val obstaclesLike       = gameState.collidingPlayerObstacles(player)
+
+    val newPosition = if moving then {
+      val pos = player.lastValidPosition(
+        player.pos + player.speed * dt / 1000 * Complex.rotation(direction),
+        obstaclesLike
+      )
+
+      if pos != player.pos then pos
+      else {
+        val secondTry = player.lastValidPosition(
+          player.pos + player.speed * dt / 1000 * Complex.rotation(direction - math.Pi / 4),
+          obstaclesLike
+        )
+        if secondTry != player.pos then secondTry
+        else
+          player.lastValidPosition(
+            player.pos + player.speed * dt / 1000 * Complex.rotation(direction + math.Pi / 4),
+            obstaclesLike
+          )
+      }
+    } else player.pos
+
+    val newRotation =
+      if obstaclesLike.exists(obstacle =>
+          player.shape.collides(newPosition, rotation, obstacle.shape, obstacle.pos, obstacle.rotation)
+        )
+      then player.rotation
+      else rotation
+
+    val finalMoving = player.pos != newPosition
+
+    UpdatePlayerPos(
+      GameAction.Id.initial,
+      time,
+      playerId,
+      newPosition,
+      (newPosition - player.pos).arg,
+      finalMoving,
+      newRotation,
+      PlayerSource
+    )
+  }
+
+  gameStateMaybePlayerAndMousePosTickerEvents
+    .collect { case (gameState, Some(me), mousePos, pressedKeys) => (gameState, me, mousePos, pressedKeys) }
+    .foreach { (gameState: GameState, me: Player, mousePos: Complex, pressedUserInput: Set[UserInput]) =>
+      val now = serverTime
+
+      val deltaTime = now - lastTimeStamp
+      lastTimeStamp = now.toDouble
+
+      val playerMovement = UserInput.movingDirection(pressedUserInput)
+      val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
+
+      unconfirmedActions = unconfirmedActions :+ positionAction
+      maybeLastPositionUpdate = Some(positionAction)
+
+      nextGameState()
+
+      timeToDraw.writer.onNext(0)
+    }
+
+  gameStateMaybePlayerAndMousePosTickerEvents
+    .collect { case (_, None, _, _) =>
+      0
+    }
+    .foreach(timeToDraw.writer.onNext)
+
+  timeToDraw.events.sample($gameStates).foreach { gameStateToDraw =>
+    val now = serverTime
+    gameDrawer.drawGameState(
+      gameStateToDraw,
+      gameStateToDraw.entityByIdAs[Player](playerId).fold(Complex.zero)(_.currentPosition(now)),
+      now
+    )
+  }
+
+  private val ticker = (_: Double) => tickerBus.writer.onNext(0)
 
   application.ticker.add(ticker)
 
