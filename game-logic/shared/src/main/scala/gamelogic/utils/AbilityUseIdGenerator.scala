@@ -9,3 +9,8 @@ final class AbilityUseIdGenerator(startingId: Ability.UseId) extends IdGenerator
 
   protected def fromLong(long: Long): UseId = Ability.UseId(long)
 }
+
+object AbilityUseIdGenerator {
+  implicit def fromContainer(implicit idGeneratorContainer: IdGeneratorContainer): AbilityUseIdGenerator =
+    idGeneratorContainer.abilityUseIdGenerator
+}

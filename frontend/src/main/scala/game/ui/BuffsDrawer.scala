@@ -49,7 +49,7 @@ trait BuffsDrawer extends Drawer {
 
       state.players.get(shield.bearerId) match {
         case Some(player) =>
-          val playerPos = player.currentPosition(time - player.time, state.obstacles.values)
+          val playerPos = player.currentPosition(time, state.obstacles.values)
           camera.viewportManager(buff, playerPos, player.shape.boundingBox)
         case None =>
           buff.visible = false

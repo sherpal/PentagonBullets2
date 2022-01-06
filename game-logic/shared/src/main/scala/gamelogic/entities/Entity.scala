@@ -38,7 +38,7 @@ object Entity {
 
     def initial: Id = 0L
 
-    given Ordering[Id] = Ordering.by(_.toLong)
+    given Ordering[Id] = Ordering.fromLessThan(_ < _)
 
   def newId()(using gen: IdGeneratorContainer): Entity.Id = gen.entityIdGenerator.nextId()
 

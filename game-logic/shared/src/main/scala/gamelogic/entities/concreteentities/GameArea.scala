@@ -3,7 +3,7 @@ package gamelogic.entities.concreteentities
 import be.doeraene.physics.Complex
 import be.doeraene.physics.Complex.i
 import gamelogic.gamestate.{GameAction, GameState}
-import be.doeraene.physics.shape.ConvexPolygon
+import be.doeraene.physics.shape.{ConvexPolygon, Polygon}
 import gamelogic.entities.ActionSource.ServerSource
 import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.gamestate.gameactions.{NewObstacle, NewPlayer, TranslatePlayer}
@@ -67,11 +67,32 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
     rightEdgeVertices
   )
 
+  val gameVertices: Vector[Complex] = Vector(
+    topEdgeVertices._1 + leftEdgeVertices._1,
+    bottomEdgeVertices._1 + leftEdgeVertices._1,
+    bottomEdgeVertices._1 + rightEdgeVertices._1,
+    topEdgeVertices._1 + rightEdgeVertices._1
+  )
+
+  def gameBounds: Polygon = Polygon(gameVertices)
+
   def createCenterSquare(radius: Double, source: ActionSource)(using IdGeneratorContainer): NewObstacle = {
     val vertices = (0 to 3).map(j => Complex.rotation(j * math.Pi / 2)).map(_ * radius).toVector
 
     NewObstacle(GameAction.newId(), Time.currentTime(), Entity.newId(), Complex(0, 0), vertices, source)
   }
+
+  def createGameBoundsBarriers(using IdGeneratorContainer): List[NewObstacle] =
+    gameAreaEdgesVertices.map { (obstacleCenter, obstacleVertices) =>
+      NewObstacle(
+        GameAction.newId(),
+        Time.currentTime(),
+        Entity.newId(),
+        obstacleCenter,
+        obstacleVertices,
+        ServerSource
+      )
+    }
 
   def createPlayer(playerInfo: PlayerInfo, colour: RGBColour)(implicit
       idGeneratorContainer: IdGeneratorContainer

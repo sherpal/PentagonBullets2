@@ -21,11 +21,12 @@ object GameStateInitializer {
 
     val centerOctagonRadius: Double = 50.0 * math.sqrt(2)
 
-    val createCenterSquare = gameArea.createCenterSquare(centerOctagonRadius, ServerSource)
+    val createCenterSquare     = gameArea.createCenterSquare(centerOctagonRadius, ServerSource)
+    val createObstaclesActions = createCenterSquare +: gameArea.createGameBoundsBarriers
 
     val newPlayerActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
 
-    val gameStateAfterNewPlayers: GameState = createCenterSquare(initialGameState).applyActions(newPlayerActions)
+    val gameStateAfterNewPlayers: GameState = initialGameState.applyActions(createObstaclesActions ++ newPlayerActions)
 
     val playerTranslations = gameArea.translateTeams(gameStateAfterNewPlayers, Player.radius * 5)
 
@@ -34,12 +35,15 @@ object GameStateInitializer {
     val (gameStateAfterObstacles, newObstaclesActions) = (1 until 3 * (numberOfPlayers - 1)).foldLeft(
       (gameStateAfterPlayers, List.empty[GameAction])
     ) { case ((gameStateAcc, actionsAcc), _) =>
-      val action = gameArea.createObstacle(gameStateAcc, 50, 50, ServerSource)
+      val action = gameArea.createObstacle(gameStateAcc, 100, 100, ServerSource)
 
       (action(gameStateAcc), action +: actionsAcc)
     }
 
-    (initialGameState, List(createCenterSquare) ++ newPlayerActions ++ playerTranslations ++ newObstaclesActions)
+    (
+      initialGameState,
+      createObstaclesActions ++ newPlayerActions ++ playerTranslations ++ newObstaclesActions
+    )
   }
 
 }

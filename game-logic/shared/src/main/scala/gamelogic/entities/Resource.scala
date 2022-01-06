@@ -34,8 +34,8 @@ object Resource {
     def tryCompareTo[B >: ResourceAmount](that: B)(implicit evidence$1: AsPartiallyOrdered[B]): Option[Int] =
       that match {
         case that: ResourceAmount if that.resourceType == this.resourceType => Some(this.amount compare that.amount)
-        case that: ResourceAmount if that.resourceType != NoResource && this.resourceType == NoResource => Some(1)
-        case that: ResourceAmount if that.resourceType == NoResource && this.resourceType != NoResource => Some(-1)
+        case that: ResourceAmount if that.resourceType != NoResource && this.resourceType == NoResource => Some(-1)
+        case that: ResourceAmount if that.resourceType == NoResource && this.resourceType != NoResource => Some(1)
         case _                                                                                          => None
       }
   }
@@ -58,8 +58,8 @@ object Resource {
   val zero: ResourceAmount             = noResourceAmount
 
   final val resources: Map[String, Resource] = Map(
-    Mana.toString -> Mana,
-    Energy.toString -> Energy,
+    Mana.toString       -> Mana,
+    Energy.toString     -> Energy,
     NoResource.toString -> NoResource
   )
   private def fromString(resourceStr: String): Resource = resources(resourceStr)

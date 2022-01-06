@@ -85,7 +85,7 @@ object GamePlaying {
         if newInfo.areAllPlayersReady then
           val gameMasterInfo = newInfo.maybeGameMasterInfo.get // safe here
 
-          val gameMasterRef = context.spawn(gameMasterInfo.gameMaster(players), "GameMaster")
+          val gameMasterRef = context.spawn(gameMasterInfo.gameMaster(newInfo.players), "GameMaster")
           context.watchWith(gameMasterRef, GameMasterDied)
 
           gameInitialised(newInfo.intializedInfo(gameMasterRef))
@@ -110,7 +110,7 @@ object GamePlaying {
               )
             )
           }
-          receiver(info.withGameMasterInfo(GameMasterInfo(idGeneratorContainer, initialGameState, firstActions)))
+          receiver(newInfo.withGameMasterInfo(GameMasterInfo(idGeneratorContainer, initialGameState, firstActions)))
         else receiver(newInfo)
       case GameMasterDied => Behaviors.unhandled
     }
@@ -123,6 +123,14 @@ object GamePlaying {
       gameMaster: ActorRef[GameMaster.Command]
   )
 
-  private def gameInitialised(info: GameInitialisedInfo): Behavior[Command] = Behaviors.ignore
+  private def gameInitialised(info: GameInitialisedInfo): Behavior[Command] = Behaviors.receive { (context, command) =>
+    command match {
+      case GameMasterDied =>
+        context.log.info("Game master died, shutting down...")
+        Behaviors.stopped
+      case _ =>
+        Behaviors.ignore
+    }
+  }
 
 }

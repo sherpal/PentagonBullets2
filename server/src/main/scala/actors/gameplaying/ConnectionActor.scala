@@ -94,9 +94,14 @@ object ConnectionActor {
 
     Behaviors.receive { (context, command) =>
       command match {
-        case GameActionWrapper(actions) => ???
+        case GameActionWrapper(actions) =>
+          gameMasterRef ! GameMaster.MultipleActionsWrapper(actions, playerName)
+          Behaviors.same
         case msg: ForExternalWorld =>
           outerWorld ! msg.forward
+          Behaviors.same
+        case Disconnect =>
+          gameMasterRef ! GameMaster.PlayerDisconnected(playerName)
           Behaviors.same
         case _ =>
           Behaviors.unhandled

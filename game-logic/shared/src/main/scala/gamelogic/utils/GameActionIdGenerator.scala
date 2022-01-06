@@ -9,3 +9,8 @@ final class GameActionIdGenerator(startingId: GameAction.Id) extends IdGenerator
 
   protected def fromLong(long: Long): Id = GameAction.Id(long)
 }
+
+object GameActionIdGenerator {
+  implicit def fromContainer(implicit idGeneratorContainer: IdGeneratorContainer): GameActionIdGenerator =
+    idGeneratorContainer.gameActionIdGenerator
+}

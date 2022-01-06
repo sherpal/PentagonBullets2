@@ -5,7 +5,7 @@ import gamelogic.entities.Entity
 import gamelogic.entities.concreteentities.Player
 import game.ui.reactivepixi.ReactiveStage
 import gamelogic.gamestate.GameState
-import gamecommunication.ServerToClient.AddAndRemoveActions
+import gamecommunication.ServerToClient.{AddAndRemoveActions, BeginIn}
 import be.doeraene.physics.Complex
 import assets.Asset
 import game.ui.GameDrawer
@@ -29,6 +29,7 @@ final class GameStateManager(
     reactiveStage: ReactiveStage,
     initialGameState: GameState,
     actionsFromServerEvents: EventStream[AddAndRemoveActions],
+    beginInEvents: EventStream[BeginIn],
     socketOutWriter: Observer[ClientToServer],
     userControls: UserControls,
     playerId: Entity.Id,
@@ -36,6 +37,8 @@ final class GameStateManager(
     resources: PartialFunction[Asset, LoaderResource]
 )(implicit owner: Owner) {
   println("Game State Manager initialized")
+
+  beginInEvents.foreach(beginIn => println(s"Game Begins in ${beginIn.millis} millis"))
 
   @inline def serverTime: Long         = System.currentTimeMillis() + deltaTimeWithServer
   @inline def application: Application = reactiveStage.application
@@ -63,13 +66,7 @@ final class GameStateManager(
   /** Signal giving at all time the game position of the user mouse.
     */
   val $gameMousePosition: Signal[Complex] =
-    userControls.$effectiveMousePosition.map(gameDrawer.camera.mousePosToWorld)
-      .startWith(Complex.zero)
-  val $mouseAngleWithPosition: Signal[Angle] = $gameMousePosition.combineWith($gameStates).map {
-    (mousePosition: Complex, gameState: GameState) =>
-      val myPositionNow = gameState.players.get(playerId).fold(Complex.zero)(_.pos)
-      (mousePosition - myPositionNow).arg
-  }
+    userControls.$effectiveMousePosition.map(gameDrawer.camera.mousePosToWorld).startWith(Complex.zero)
 
   private var unconfirmedActions: List[GameAction] = Nil
 
@@ -114,18 +111,13 @@ final class GameStateManager(
 
   private var lastTimeStamp = org.scalajs.dom.window.performance.now()
 
-  private val tickerBus: EventBus[Any]  = new EventBus
-  private val timeToDraw: EventBus[Any] = new EventBus
+  private val gameLoopInfoSignal = $gameStates.combineWith($gameMousePosition, userControls.$pressedUserInput)
+    .map((gameState, mousePos, pressedKeys) =>
+      (gameState, gameState.entityByIdAs[Player](playerId), mousePos, pressedKeys)
+    )
+    .observe
 
-  private val gameStateAndMousePosTickerEvents: EventStream[(GameState, Complex, Set[UserInput])] =
-    tickerBus.events.sample($gameStates, $gameMousePosition, userControls.$pressedUserInput)
-
-  private val gameStateMaybePlayerAndMousePosTickerEvents
-      : EventStream[(GameState, Option[Player], Complex, Set[UserInput])] =
-    gameStateAndMousePosTickerEvents
-      .map((gameState, mousePos, pressedKeys) =>
-        (gameState, gameState.entityByIdAs[Player](playerId), mousePos, pressedKeys)
-      )
+  private val gameStateStrictSignal = $gameStates.observe
 
   def movePlayer(
       gameState: GameState,
@@ -181,41 +173,37 @@ final class GameStateManager(
     )
   }
 
-  gameStateMaybePlayerAndMousePosTickerEvents
-    .collect { case (gameState, Some(me), mousePos, pressedKeys) => (gameState, me, mousePos, pressedKeys) }
-    .foreach { (gameState: GameState, me: Player, mousePos: Complex, pressedUserInput: Set[UserInput]) =>
-      val now = serverTime
+  private val ticker = (_: Double) => {
+    val info = gameLoopInfoSignal.now()
 
-      val deltaTime = now - lastTimeStamp
-      lastTimeStamp = now.toDouble
+    val (gameState, maybePlayer, mousePos, pressedUserInput) = info
 
-      val playerMovement = UserInput.movingDirection(pressedUserInput)
-      val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
+    maybePlayer match {
+      case Some(me) =>
+        val now       = serverTime
+        val deltaTime = now - lastTimeStamp
+        lastTimeStamp = now.toDouble
 
-      unconfirmedActions = unconfirmedActions :+ positionAction
-      maybeLastPositionUpdate = Some(positionAction)
+        if gameState.isPlaying then {
+          val playerMovement = UserInput.movingDirection(pressedUserInput)
+          val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
 
-      nextGameState()
+          unconfirmedActions = unconfirmedActions :+ positionAction
+          maybeLastPositionUpdate = Some(positionAction)
 
-      timeToDraw.writer.onNext(0)
+          nextGameState()
+        }
+      case None => // nothing to do
     }
 
-  gameStateMaybePlayerAndMousePosTickerEvents
-    .collect { case (_, None, _, _) =>
-      0
-    }
-    .foreach(timeToDraw.writer.onNext)
-
-  timeToDraw.events.sample($gameStates).foreach { gameStateToDraw =>
-    val now = serverTime
+    val now             = serverTime
+    val gameStateToDraw = gameStateStrictSignal.now()
     gameDrawer.drawGameState(
       gameStateToDraw,
       gameStateToDraw.entityByIdAs[Player](playerId).fold(Complex.zero)(_.currentPosition(now)),
       now
     )
   }
-
-  private val ticker = (_: Double) => tickerBus.writer.onNext(0)
 
   application.ticker.add(ticker)
 

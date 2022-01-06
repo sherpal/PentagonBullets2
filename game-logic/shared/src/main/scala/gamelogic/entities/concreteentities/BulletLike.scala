@@ -27,6 +27,6 @@ trait BulletLike extends MovingBody {
 
   val travelledDistance: Double
 
-  def currentTravelledDistance(now: Long): Double = travelledDistance + (currentPosition(now - time) - pos).modulus
+  def currentTravelledDistance(now: Long): Double = travelledDistance + currentPosition(now).distanceTo(pos)
 
 }

@@ -18,6 +18,7 @@ import utils.laminarzio.onMountZIOWithContext
 import utils.websocket.Socket
 import zio.duration._
 import zio.{UIO, ZIO}
+import ziojs.Implicits._
 
 object GamePlayingContainer {
   private val gameSceneSizeRatio = 1200 / 800.0
@@ -63,6 +64,7 @@ object GamePlayingContainer {
 
     def mountEffect(container: dom.Element)(implicit owner: Owner) = for {
       controls     <- services.localstorage.controls.retrieveControls
+      _            <- UIO(println(controls)).whenInDev
       userControls <- UIO(new UserControls(new Keyboard(controls), new Mouse(application.view, controls)))
       stage        <- UIO(new ReactiveStage(application))
       _            <- addWindowResizeEventListener(stage)
@@ -71,6 +73,7 @@ object GamePlayingContainer {
           stage,
           GameState.initialGameState,
           incomingMessages.collect { case msg: ServerToClient.AddAndRemoveActions => msg },
+          incomingMessages.collect { case msg: ServerToClient.BeginIn => msg },
           messageWriter,
           userControls,
           myEntityId,
@@ -78,9 +81,7 @@ object GamePlayingContainer {
           resources
         )
       )
-      _ <- ZIO.effectTotal {
-        container.appendChild(application.view)
-      }
+      _ <- ZIO.effectTotal(container.appendChild(application.view))
       _ <- ZIO.effectTotal(messageWriter.onNext(ClientToServer.ReadyToStart(playerName)))
     } yield ()
 

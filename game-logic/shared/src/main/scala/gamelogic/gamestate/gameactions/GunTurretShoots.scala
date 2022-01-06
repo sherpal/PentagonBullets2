@@ -41,7 +41,7 @@ final case class GunTurretShoots(
   def applyDefault(gameState: GameState): GameState = {
     val turret = gameState.entityByIdAs[GunTurret](turretId).get
     gameState
-      .withBullet(
+      .withEntity[Bullet](
         bulletId,
         time,
         Bullet(
@@ -57,7 +57,7 @@ final case class GunTurretShoots(
           0
         )
       )
-      .withGunTurret(
+      .withEntity[GunTurret](
         turretId,
         time,
         GunTurret(

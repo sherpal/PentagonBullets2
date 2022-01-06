@@ -4,6 +4,7 @@ import gamelogic.entities.*
 import gamelogic.buffs.*
 import gamelogic.entities.concreteentities.{HealingZone, *}
 import be.doeraene.physics.shape.{Polygon, Shape}
+import entitiescollections.PlayerTeam
 
 import scala.reflect.ClassTag
 
@@ -119,8 +120,17 @@ final class GameState(
     entities.collect { case (id, entity: T) => (id, entity) }
 
   def players: Map[Entity.Id, Player] = allTEntities[Player]
+  def bullets: Map[Entity.Id, Bullet] = allTEntities[Bullet]
 
   def playerById(playerId: Entity.Id): Option[Player] = entityByIdAs[Player](playerId)
+
+  def teamsByPlayerId: Map[Entity.Id, PlayerTeam] = (players ++ deadPlayers).values
+    .groupBy(_.team)
+    .flatMap { (teamId, players) =>
+      val playerTeam = new PlayerTeam(teamId, players.map(_.id).toList)
+      players.map(_.id -> playerTeam)
+    }
+    .toMap
 
   def isPlayerAlive(playerId: Entity.Id): Boolean = entityByIdAs[Player](playerId).isDefined
 
@@ -139,26 +149,8 @@ final class GameState(
     newTime = time
   )
 
-  def withAbilityGiver(abilityGiverId: Entity.Id, time: Long, abilityGiver: AbilityGiver): GameState = ???
-
-  def withBullet(id: Entity.Id, time: Long, bullet: Bullet): GameState = withEntity(id, time, bullet)
-
-  def withBarrier(id: Entity.Id, time: Long, barrier: Barrier): GameState = withEntity(id, time, barrier)
-
-  def withBulletAmplifier(id: Entity.Id, time: Long, bulletAmplifier: BulletAmplifier): GameState =
-    withEntity(id, time, bulletAmplifier)
-
   def withDeadPlayer(time: Long, player: Player): GameState =
     copy(deadPlayers = deadPlayers + (player.id -> player), newTime = time)
-
-  def withGunTurret(turretId: Entity.Id, time: Long, gunTurret: GunTurret): GameState =
-    withEntity(turretId, time, gunTurret)
-
-  def withHealUnit(id: Entity.Id, time: Long, healUnit: HealUnit): GameState = withEntity(id, time, healUnit)
-
-  def withHealingZone(zoneId: Entity.Id, time: Long, zone: HealingZone): GameState = withEntity(zoneId, time, zone)
-
-  def withPlayer(playerId: Entity.Id, time: Long, player: Player): GameState = withEntity(playerId, time, player)
 
   def collidingPlayerObstacles(player: Player): Iterable[Body] = collidingPlayerObstacles(player.team)
 
@@ -175,5 +167,12 @@ final class GameState(
 
   def passiveTBuffsById[T <: PassiveBuff](using ClassTag[T]): Map[Buff.Id, T] =
     passiveBuffsById.collect { case (id, t: T) => (id, t) }
+
+  /** Returns whether the entity with given [[Entity.Id]] is currently casting. */
+  def entityIsCasting(entityId: Entity.Id): Boolean = entityIsCasting(entityId, 0L)
+  def entityIsCasting(entityId: Entity.Id, delay: Long): Boolean =
+    castingEntityInfo.get(entityId).fold(false) { castingInfo =>
+      time + delay - castingInfo.startedTime <= castingInfo.castingTime
+    }
 
 }

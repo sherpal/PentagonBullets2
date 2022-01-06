@@ -4,6 +4,8 @@ import boopickle.Default._
 import gamelogic.gamestate.GameAction
 import gamelogic.entities.Entity
 
+import scala.concurrent.duration._
+
 sealed trait ServerToClient
 
 object ServerToClient {
@@ -20,6 +22,10 @@ object ServerToClient {
       idsOfActionsToRemove: List[GameAction.Id]
   ) extends ServerToClient
 
+  case class BeginIn(millis: Long) extends ServerToClient {
+    def duration: FiniteDuration = millis.millis
+  }
+
   /** Received just before the beginning of the game so that the client knows what entity they control. */
   case class YourEntityIdIs(entityId: Entity.Id) extends ServerToClient
 
@@ -29,5 +35,6 @@ object ServerToClient {
     .addConcreteType[AddAndRemoveActions]
     .addConcreteType[YourEntityIdIs]
     .addConcreteType[Heartbeat.type]
+    .addConcreteType[BeginIn]
 
 }

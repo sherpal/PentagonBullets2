@@ -5,6 +5,8 @@ import gamelogic.buffs.Buff
 import gamelogic.entities.Entity
 import gamelogic.gamestate.GameAction
 
+import scala.language.implicitConversions
+
 /** Contains all the generators that are used for the different kind of ids during the game.
   */
 final case class IdGeneratorContainer(

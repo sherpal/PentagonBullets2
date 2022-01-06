@@ -28,7 +28,7 @@ final case class BulletGlue(buffId: Buff.Id, appearanceTime: Long, bearerId: Ent
       .filter(_.teamId != teamId)
       .foldLeft(gameState) { case (gs, bullet) =>
         val newPos = bullet.currentPosition(appearanceTime - bullet.time)
-        gs.withBullet(
+        gs.withEntity[Bullet](
           bullet.id,
           appearanceTime,
           Bullet(

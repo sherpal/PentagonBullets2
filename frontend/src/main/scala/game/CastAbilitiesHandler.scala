@@ -39,7 +39,7 @@ final class CastAbilitiesHandler(
     socketOutWriter.onNext(ClientToServer.GameActionWrapper(action :: Nil))
 
   private def sendUseAbility(ability: Ability): Unit =
-    sendAction(UseAbilityAction(GameAction.Id.initial, serverTime, ability, Ability.UseId.initial, PlayerSource))
+    sendAction(EntityStartsCasting(GameAction.newId(), serverTime, ability.castingTime, ability))
 
   private case class AbilityMaker[+A <: Ability](
       abilityId: AbilityIdFor[A],
@@ -115,6 +115,7 @@ final class CastAbilitiesHandler(
         .collect { case (input, gameState, Some(me)) => (input, gameState, me) }
         .withCurrentValueOf($gameMousePosition)
         .map { case (abilityInput, gameState, me, worldMousePos) =>
+          println((gameState, abilityInput.abilityId(me), worldMousePos, me))
           (gameState, abilityInput.abilityId(me), worldMousePos, me)
         }
         .collect { case (gameState, Some(abilityId), worldMousePos, me) => (gameState, abilityId, worldMousePos, me) },
@@ -126,10 +127,15 @@ final class CastAbilitiesHandler(
     )
     .filter(_._1.isPlaying)
     .foreach { case (gameState: GameState, abilityId: Ability.AbilityId, worldMousePos: Complex, me: Player) =>
+      println(s"ability id is $abilityId")
       val maybeAbility: Option[Ability] = abilityMakerFromAbilityId.get(abilityId) match {
         case Some(fn) => fn(gameState, worldMousePos, me)
         case None     => throw new RuntimeException(s"This ability Id ($abilityId) is not supported yet.")
       }
+
+      println(s"Ability is: $maybeAbility")
+      println(s"Player pos is ${me.pos}")
+      println(s"Is up is ${maybeAbility.map(_.isUp(me, serverTime, 1000))}")
 
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }

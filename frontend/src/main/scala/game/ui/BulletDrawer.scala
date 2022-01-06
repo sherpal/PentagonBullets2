@@ -26,6 +26,7 @@ trait BulletDrawer extends Drawer {
     bullets
       .filterNot(elem => bs.isDefinedAt(elem._1))
       .foreach { elem =>
+        println("removing a bullet")
         bulletStage.removeChild(elem._2)
         bullets -= elem._1
       }
@@ -43,7 +44,7 @@ trait BulletDrawer extends Drawer {
           bullets += (id -> elem)
           elem
       }
-      camera.viewportManager(newElem, bullet.currentPosition(time - bullet.time), bullet.shape.boundingBox)
+      camera.viewportManager(newElem, bullet.currentPosition(time), bullet.shape.boundingBox)
     }
   }
 

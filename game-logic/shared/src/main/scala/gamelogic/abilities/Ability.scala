@@ -40,6 +40,8 @@ trait Ability {
   /** Cost of the ability. */
   def cost: ResourceAmount
 
+  def castingTime: Long = 0L
+
   /** Type of resource needed to use the ability. */
   final def resource: Resource = cost.resourceType
 
@@ -68,7 +70,11 @@ trait Ability {
     gameState.playerById(playerId).toLeft(s"Player with id $playerId is not alive").toOption
 
   def isUp(caster: WithAbilities, now: Long, allowedError: Long = 0): Boolean =
-    now - time + allowedError >= cooldown / caster.allowedAbilities.count(_ == abilityId)
+    caster.relevantUsedAbilities.values
+      .filter(_.abilityId == abilityId)
+      .forall(ability =>
+        (now - ability.time + allowedError) >= cooldown / caster.allowedAbilities.count(_ == abilityId)
+      )
 
   protected def canBeCastAll(gameState: GameState, time: Long)(
       checks: (GameState, Long) => Option[String]*
