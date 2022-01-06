@@ -19,6 +19,7 @@ object Name {
                 s"Name can't contain '$char' (nor any of the following: ${forbiddenCharacters.filterNot(_ == char).mkString(", ")})."
               )
           )
+          .orElse(Option.when(name.length > 10)("Maximum number of characters is 10."))
 
       errorMessage.toLeft(name)
     }

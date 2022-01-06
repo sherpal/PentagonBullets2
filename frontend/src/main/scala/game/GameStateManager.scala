@@ -9,6 +9,7 @@ import gamecommunication.ServerToClient.{AddAndRemoveActions, BeginIn}
 import be.doeraene.physics.Complex
 import assets.Asset
 import game.ui.GameDrawer
+import game.ui.gui.ReactiveGUIDrawer
 import gamecommunication.ClientToServer
 import gamelogic.utils.Time
 import typings.pixiJs.PIXI.LoaderResource
@@ -107,7 +108,7 @@ final class GameStateManager(
     currentTime = () => serverTime
   )
 
-  // todo: add the gui on top
+  val guiDrawer = new ReactiveGUIDrawer(playerId, reactiveStage, resources, useAbilityBus.writer, gameStateUpdates)
 
   private var lastTimeStamp = org.scalajs.dom.window.performance.now()
 
@@ -203,6 +204,8 @@ final class GameStateManager(
       gameStateToDraw.entityByIdAs[Player](playerId).fold(Complex.zero)(_.currentPosition(now)),
       now
     )
+
+    gameStateUpdatesBus.writer.onNext((gameStateToDraw, now))
   }
 
   application.ticker.add(ticker)

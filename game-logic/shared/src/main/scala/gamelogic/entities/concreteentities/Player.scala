@@ -32,6 +32,8 @@ final case class Player(
     with Living
     with WithAbilities {
 
+  def maxLife: Double = 100
+
   def maxResourceAmount: Double = 100
 
   def resourceAmount: ResourceAmount = ResourceAmount(energy, Resource.Energy)

@@ -43,6 +43,7 @@ object Asset {
     object abilities {
       private val abs = root / "abilities"
 
+      val abilityOverlay  = Asset(abs / "ability-overlay".png)
       val barrier         = Asset(abs / "barrier".png)
       val bigBullet       = Asset(abs / "big_bullet".png)
       val bulletAmplifier = Asset(abs / "bullet_amplifier".png)
@@ -68,8 +69,14 @@ object Asset {
     object ui {
       private val ui = root / "ui"
 
-      val abilityFocus      = Asset(ui / "ability_focus".png)
-      val playerIteamBullet = Asset(ui / "player_item_bullet".png)
+      val abilityFocus     = Asset(ui / "ability_focus".png)
+      val playerItemBullet = Asset(ui / "player_item_bullet".png)
+
+      object bars {
+        private val bars = ui / "bars"
+
+        val minimalistBar = Asset(bars / "life-bar_wenakari".png)
+      }
     }
 
   }
@@ -99,5 +106,12 @@ object Asset {
     import ingame.entities._
     List(healingZone, bulletAmplifier, teamFlag)
   }
+
+  val misc: List[Asset] = List(
+    ingame.abilities.abilityOverlay,
+    ingame.ui.abilityFocus,
+    ingame.ui.playerItemBullet,
+    ingame.ui.bars.minimalistBar
+  )
 
 }

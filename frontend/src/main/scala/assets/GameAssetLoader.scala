@@ -26,7 +26,7 @@ final class GameAssetLoader(application: Application) {
   val assets: List[Asset] = (
     Asset.buffAssetMap.values ++
       Asset.abilityAssetMap.values ++
-      Asset.units
+      Asset.units ++ Asset.misc
   ).toList.distinct
 
   val $progressData: EventStream[ProgressData] = progressBus.events

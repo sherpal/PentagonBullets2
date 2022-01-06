@@ -26,7 +26,6 @@ trait BulletDrawer extends Drawer {
     bullets
       .filterNot(elem => bs.isDefinedAt(elem._1))
       .foreach { elem =>
-        println("removing a bullet")
         bulletStage.removeChild(elem._2)
         bullets -= elem._1
       }
