@@ -177,7 +177,7 @@ final class GameStateManager(
   private val ticker = (_: Double) => {
     val info = gameLoopInfoSignal.now()
 
-    val (gameState, maybePlayer, mousePos, pressedUserInput) = info
+    val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
 
     maybePlayer match {
       case Some(me) =>
@@ -195,6 +195,13 @@ final class GameStateManager(
           nextGameState()
         }
       case None => // nothing to do
+        val cameraSize = gameState.mists.values.headOption match {
+          case None       => gameState.gameAreaSideLength.toDouble
+          case Some(mist) => mist.sideLength * 1.1
+        }
+
+        gameDrawer.camera.worldWidth = cameraSize
+        gameDrawer.camera.worldHeight = cameraSize
     }
 
     val now             = serverTime

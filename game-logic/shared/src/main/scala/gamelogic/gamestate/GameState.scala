@@ -1,11 +1,13 @@
 package gamelogic.gamestate
 
+import be.doeraene.physics.Complex
 import gamelogic.entities.*
 import gamelogic.buffs.*
-import gamelogic.entities.concreteentities.{HealingZone, *}
+import gamelogic.entities.concreteentities.{GameArea, HealingZone, *}
 import be.doeraene.physics.shape.{Polygon, Shape}
 import entitiescollections.PlayerTeam
 
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 object GameState {
@@ -119,8 +121,13 @@ final class GameState(
   def allTEntities[T <: Entity](using ClassTag[T]): Map[Entity.Id, T] =
     entities.collect { case (id, entity: T) => (id, entity) }
 
-  def players: Map[Entity.Id, Player] = allTEntities[Player]
-  def bullets: Map[Entity.Id, Bullet] = allTEntities[Bullet]
+  @inline def abilityGivers: Map[Entity.Id, AbilityGiver] = allTEntities[AbilityGiver]
+  @inline def barriers: Map[Entity.Id, Barrier]           = allTEntities[Barrier]
+  @inline def bullets: Map[Entity.Id, Bullet]             = allTEntities[Bullet]
+  @inline def damageZones: Map[Entity.Id, DamageZone]     = allTEntities[DamageZone]
+  @inline def healUnits: Map[Entity.Id, HealUnit]         = allTEntities[HealUnit]
+  @inline def mists: Map[Entity.Id, Mist]                 = allTEntities[Mist]
+  @inline def players: Map[Entity.Id, Player]             = allTEntities[Player]
 
   def playerById(playerId: Entity.Id): Option[Player] = entityByIdAs[Player](playerId)
 
@@ -174,5 +181,22 @@ final class GameState(
     castingEntityInfo.get(entityId).fold(false) { castingInfo =>
       time + delay - castingInfo.startedTime <= castingInfo.castingTime
     }
+
+  lazy val gameArea: GameArea = GameArea(players.size + deadPlayers.size)
+
+  def gameAreaSideLength: Int = gameArea.gameAreaSideLength
+
+  def findPositionInMist(minDist: Int = 100, maxAttempt: Int = 50): Option[Complex] = {
+    val posGenerator: () => Complex =
+      allTEntities[Mist].values.headOption.fold(() => gameArea.randomComplexPos())(mist =>
+        () => gameArea.randomComplexPos(mist)
+      )
+    val playersNow = players.values
+    LazyList
+      .from(1)
+      .take(maxAttempt)
+      .map(_ => posGenerator())
+      .find(pos => playersNow.forall(_.pos.distanceTo(pos) > minDist))
+  }
 
 }

@@ -67,7 +67,9 @@ object Buff {
   private var lastId: ResourceIdentifier   = 0
   private def nextId(): ResourceIdentifier = { lastId += 1; lastId }
 
-  val shield: ResourceIdentifier     = nextId()
-  val bulletGlue: ResourceIdentifier = nextId()
+  val shield: ResourceIdentifier          = nextId()
+  val bulletGlue: ResourceIdentifier      = nextId()
+  val healUnitDealer: ResourceIdentifier  = nextId()
+  val damageZoneSpawn: ResourceIdentifier = nextId()
 
 }

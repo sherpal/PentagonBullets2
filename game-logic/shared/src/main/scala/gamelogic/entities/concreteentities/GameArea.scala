@@ -14,6 +14,8 @@ import _root_.utils.misc.RGBColour
 
 class GameArea(val width: Int = 1000, val height: Int = 800) {
 
+  def gameAreaSideLength: Int = width
+
   def randomPos(): (Double, Double) = (
     (scala.util.Random.nextInt(width - 100) - width / 2 + 50).toDouble,
     (scala.util.Random.nextInt(height - 100) - height / 2 + 50).toDouble
@@ -39,6 +41,8 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
       (scala.util.Random.nextInt(height - 100) - height / 2 + 50).toDouble
     )
   }
+
+  def randomComplexPos(mist: Mist): Complex = Complex.fromTuple(randomPos(mist))
 
   val topEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(0, height / 2 + 5),

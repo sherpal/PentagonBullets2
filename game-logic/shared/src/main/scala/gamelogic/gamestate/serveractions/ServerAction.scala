@@ -15,8 +15,7 @@ trait ServerAction {
       idGeneratorContainer: IdGeneratorContainer
   ): (ActionGatherer, ServerAction.ServerActionOutput)
 
-  /** Isn't this Kleisli? */
-  def ++(that: ServerAction): ServerAction = ServerAction.AndThen(this, that)
+  final def ++(that: ServerAction): ServerAction = ServerAction.AndThen(this, that)
 
 }
 

@@ -3,12 +3,14 @@ package gamelogic.entities.concreteentities
 import be.doeraene.physics.Complex
 import be.doeraene.physics.shape.{Circle, Shape}
 import gamelogic.entities.{Body, Entity}
+import gamelogic.gamestate.GameState
+
+import scala.annotation.tailrec
+import scala.util.Random
 
 /** A HealUnit pops at random places during the Game and heal players for some small amount.
   */
-final case class HealUnit(id: Entity.Id, time: Long, xPos: Double, yPos: Double) extends Body {
-
-  def pos: Complex = Complex(xPos, yPos)
+final case class HealUnit(id: Entity.Id, time: Long, pos: Complex) extends Body {
 
   val shape: Shape = Circle(HealUnit.radius)
 
@@ -25,4 +27,22 @@ object HealUnit {
 
   def playerTakeUnit(player: Player, time: Long): Player =
     player.copy(lifeTotal = math.min(player.lifeTotal + lifeGain, Player.maxLife))
+
+  @tailrec
+  def randomPosition(gameState: GameState): Complex = {
+    val pos = gameState
+      .findPositionInMist()
+      .getOrElse(
+        gameState.gameBounds.randomPointIn((realRange, imRange) =>
+          Complex(
+            Random.between(realRange._1, realRange._2),
+            Random.between(imRange._1, imRange._2)
+          )
+        )
+      )
+    val dummyHealUnit = HealUnit(Entity.Id.initial, 0, pos)
+
+    if gameState.obstacles.values.exists(_.collides(dummyHealUnit, 0)) then randomPosition(gameState)
+    else pos
+  }
 }

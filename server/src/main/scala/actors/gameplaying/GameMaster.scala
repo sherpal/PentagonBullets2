@@ -48,7 +48,15 @@ object GameMaster {
     } yield ()
 
   private val serverAction =
-    ManageDeadPlayers ++ ManageTickerBuffs ++ ManageUsedAbilities ++ ManageGunTurrets ++ ManageBullets
+    ManageDeadPlayers ++
+      ManageTickerBuffs ++
+      ManageUsedAbilities ++
+      ManageGunTurrets ++
+      ManageBullets ++
+      ((ManageHealUnits parWith ManageDamageZones) parWith
+        (ManageBarriers parWith ManageMists)) ++
+      ManageAbilityGivers ++
+      ManageEndOfGame
 
   private implicit def wrapServerToClient(serverToClient: ServerToClient): ConnectionActor.ServerToClientWrapper =
     ConnectionActor.ServerToClientWrapper(serverToClient)

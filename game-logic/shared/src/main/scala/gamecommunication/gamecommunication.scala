@@ -2,11 +2,12 @@ import be.doeraene.physics.Complex
 import be.doeraene.physics.shape.{Circle, Polygon, Shape}
 import boopickle.Default.*
 import gamelogic.abilities.*
+import gamelogic.buffs.godsbuffs.{DamageZoneSpawn, HealUnitDealer}
 import gamelogic.entities.Entity
 import gamelogic.entities.concreteentities.*
 import gamelogic.gamestate.GameAction
 import gamelogic.gamestate.gameactions.*
-import gamelogic.buffs.{Buff, SimplePassiveBuff}
+import gamelogic.buffs.{Buff, SimplePassiveBuff, SimpleTickerBuff}
 
 package object gamecommunication {
 
@@ -34,6 +35,10 @@ package object gamecommunication {
   given Pickler[SimplePassiveBuff] = compositePickler[SimplePassiveBuff]
     .addConcreteType[Shield]
     .addConcreteType[BulletGlue]
+
+  given Pickler[SimpleTickerBuff] = compositePickler[SimpleTickerBuff]
+    .addConcreteType[HealUnitDealer]
+    .addConcreteType[DamageZoneSpawn]
 
   given Pickler[Ability] = compositePickler[Ability]
     .addConcreteType[ActivateShield]
@@ -68,6 +73,7 @@ package object gamecommunication {
   given Pickler[GameAction] = compositePickler[GameAction]
     .addConcreteType[BulletAmplifierAmplified]
     .addConcreteType[ChangeBulletRadius]
+    .addConcreteType[CreateGod]
     .addConcreteType[DestroyBarrier]
     .addConcreteType[DestroyBulletAmplifier]
     .addConcreteType[DestroyBullet]
@@ -107,8 +113,10 @@ package object gamecommunication {
     .addConcreteType[PlayerTakeHealUnit]
     .addConcreteType[PlayerTakesFlag]
     .addConcreteType[PutSimplePassiveBuff]
+    .addConcreteType[PutSimpleTickerBuff]
     .addConcreteType[RemoveRelevantAbility]
     .addConcreteType[SmashBulletGrows]
+    .addConcreteType[TickerBuffTicks]
     .addConcreteType[TranslatePlayer]
     .addConcreteType[UpdateDamageZone]
     .addConcreteType[UpdateHealingZone]

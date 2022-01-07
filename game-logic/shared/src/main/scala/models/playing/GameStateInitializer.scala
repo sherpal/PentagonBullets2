@@ -1,11 +1,16 @@
 package models.playing
 
 import gamelogic.entities.ActionSource.ServerSource
-import gamelogic.entities.concreteentities.{GameArea, Player}
+import gamelogic.entities.concreteentities.{GameArea, God, Player}
 import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.utils.IdGeneratorContainer
 import models.menus.GameJoinedInfo
 import _root_.utils.misc.RGBColour
+import gamelogic.buffs.godsbuffs.{DamageZoneSpawn, HealUnitDealer}
+import gamelogic.entities.Entity
+import gamelogic.gamestate.gameactions.{CreateGod, PutSimpleTickerBuff, UpdateMist}
+import gamelogic.utils.Time
+import gamelogic.buffs.Buff
 
 object GameStateInitializer {
 
@@ -17,7 +22,38 @@ object GameStateInitializer {
 
     val initialGameState = GameState.initialGameState
 
+    val createGod = CreateGod(GameAction.newId(), Time.currentTime(), Entity.newId())
+
+    val healUnitDealerCreation = PutSimpleTickerBuff(
+      GameAction.newId(),
+      Time.currentTime(),
+      HealUnitDealer(Buff.nextBuffId(), createGod.godId, Time.currentTime(), Time.currentTime()),
+      ServerSource
+    )
+
+    val damageZoneSpawnCreation = PutSimpleTickerBuff(
+      GameAction.newId(),
+      Time.currentTime(),
+      DamageZoneSpawn(Buff.nextBuffId(), createGod.godId, Time.currentTime(), Time.currentTime()),
+      ServerSource
+    )
+
+    val godActions = List(createGod, healUnitDealerCreation, damageZoneSpawnCreation)
+
     val gameArea = GameArea(gameInfo.numberOfPlayers)
+
+    val createMists = List(
+      UpdateMist(
+        GameAction.newId(),
+        Time.currentTime(),
+        Entity.newId(),
+        Time.currentTime() + 5000,
+        Time.currentTime() + 5000,
+        gameArea.gameAreaSideLength - 1, // -1 otherwise empty polygon make the server crash
+        gameArea.gameAreaSideLength,
+        ServerSource
+      )
+    )
 
     val centerOctagonRadius: Double = 50.0 * math.sqrt(2)
 
@@ -26,7 +62,21 @@ object GameStateInitializer {
 
     val newPlayerActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
 
-    val gameStateAfterNewPlayers: GameState = initialGameState.applyActions(createObstaclesActions ++ newPlayerActions)
+    val gameStateAfterNewPlayers: GameState =
+      initialGameState.applyActions(godActions ++ createObstaclesActions ++ newPlayerActions)
+
+    assert(
+      gameStateAfterNewPlayers
+        .allTEntities[God]
+        .values
+        .exists(god => gameStateAfterNewPlayers.tickerBuffs.get(god.id).exists(_.size == 2)),
+      gameStateAfterNewPlayers
+        .allTEntities[God]
+        .values
+        .toList
+        .map(god => gameStateAfterNewPlayers.tickerBuffs.get(god.id))
+        .toString()
+    )
 
     val playerTranslations = gameArea.translateTeams(gameStateAfterNewPlayers, Player.radius * 5)
 
@@ -42,7 +92,7 @@ object GameStateInitializer {
 
     (
       initialGameState,
-      createObstaclesActions ++ newPlayerActions ++ playerTranslations ++ newObstaclesActions
+      godActions ++ createMists ++ createObstaclesActions ++ newPlayerActions ++ playerTranslations ++ newObstaclesActions
     )
   }
 

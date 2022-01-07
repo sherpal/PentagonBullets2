@@ -70,4 +70,8 @@ final class Circle(val radius: Double) extends Curved {
 
   }
 
+  def randomPointIn(gen: ((Double, Double), (Double, Double)) => Complex): Complex =
+    if radius <= 0 then 0
+    else LazyList.from(0).map(_ => gen((-radius, radius), (-radius, radius))).filter(_.modulus <= radius).head
+
 }

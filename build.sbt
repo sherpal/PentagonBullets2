@@ -30,6 +30,9 @@ lazy val `game-logic` = crossProject(JSPlatform, JVMPlatform)
   .settings(
     SharedDependencies.addDependencies()
   )
+  .jvmSettings(
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+  )
   .jsSettings(
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
     //libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb_sjs1_2.13" % "2.3.0",

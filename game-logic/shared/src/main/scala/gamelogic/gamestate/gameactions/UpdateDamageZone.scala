@@ -1,5 +1,7 @@
 package gamelogic.gamestate.gameactions
 
+import be.doeraene.physics.Complex
+import be.doeraene.physics.shape.Circle
 import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.entities.concreteentities.DamageZone
 import gamelogic.gamestate.statetransformers.*
@@ -13,14 +15,13 @@ final case class UpdateDamageZone(
     id: Entity.Id,
     lastGrow: Long,
     lastTick: Long,
-    xPos: Double,
-    yPos: Double,
+    pos: Complex,
     radius: Int,
     actionSource: ActionSource
 ) extends GameAction {
 
   def createGameStateTransformer(gameState: GameState): GameStateTransformer =
-    WithEntity(DamageZone(id, lastGrow, lastTick, xPos, yPos, radius), time)
+    WithEntity(DamageZone(id, lastGrow, lastTick, pos, new Circle(radius)), time)
 
   def changeTime(newTime: Long): GameAction = copy(time = newTime)
 

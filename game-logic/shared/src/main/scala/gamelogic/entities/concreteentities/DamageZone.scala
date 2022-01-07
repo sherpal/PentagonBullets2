@@ -12,12 +12,9 @@ final case class DamageZone(
     id: Entity.Id,
     lastGrow: Long,
     lastTick: Long,
-    xPos: Double,
-    yPos: Double,
+    pos: Complex,
     shape: Circle
 ) extends Body {
-
-  def pos: Complex = Complex(xPos, yPos)
 
   def time: Long = lastGrow
 
@@ -41,15 +38,5 @@ object DamageZone {
 
   // A DamageZone pops every ~ seconds
   val popRate: Long = 7000
-
-  def apply(id: Entity.Id, lastGrow: Long, lastTick: Long, xPos: Double, yPos: Double, radius: Double): DamageZone =
-    new DamageZone(
-      id,
-      lastGrow,
-      lastTick,
-      xPos,
-      yPos,
-      Circle(radius)
-    )
 
 }

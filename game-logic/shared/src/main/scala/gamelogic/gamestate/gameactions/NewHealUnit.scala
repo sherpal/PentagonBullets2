@@ -17,7 +17,7 @@ final case class NewHealUnit(
 ) extends GameAction {
 
   def createGameStateTransformer(gameState: GameState): GameStateTransformer =
-    WithEntity(HealUnit(id, time, pos.re, pos.im), time)
+    WithEntity(HealUnit(id, time, pos), time)
 
   def changeTime(newTime: Long): GameAction = copy(time = newTime)
 

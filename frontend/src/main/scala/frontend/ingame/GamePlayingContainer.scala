@@ -85,9 +85,6 @@ object GamePlayingContainer {
       _ <- ZIO.effectTotal(messageWriter.onNext(ClientToServer.ReadyToStart(playerName)))
     } yield ()
 
-    div(
-      s"This is the game playing container! ($playerName, $myEntityId, $timeDelta)",
-      onMountZIOWithContext(ctx => mountEffect(ctx.thisNode.ref)(ctx.owner))
-    )
+    div(onMountZIOWithContext(ctx => mountEffect(ctx.thisNode.ref)(ctx.owner)))
   }
 }
