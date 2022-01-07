@@ -114,6 +114,7 @@ package object gamecommunication {
     .addConcreteType[PlayerTakesFlag]
     .addConcreteType[PutSimplePassiveBuff]
     .addConcreteType[PutSimpleTickerBuff]
+    .addConcreteType[RemoveBuff]
     .addConcreteType[RemoveRelevantAbility]
     .addConcreteType[SmashBulletGrows]
     .addConcreteType[TickerBuffTicks]

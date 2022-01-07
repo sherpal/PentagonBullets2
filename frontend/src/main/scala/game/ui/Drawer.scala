@@ -53,7 +53,7 @@ trait Drawer {
 
   protected def circleTexture(colour: Int, alpha: Double, radius: Double): PIXI.RenderTexture = {
     val graphics = new Graphics
-    graphics.lineStyle(1, colour, alpha)
+    graphics.lineStyle(2, colour, alpha)
 
     graphics.beginFill(0xffffff, 0.0)
     graphics.drawCircle(0, 0, radius)

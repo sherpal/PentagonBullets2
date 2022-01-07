@@ -103,6 +103,11 @@ final class GameState(
     )
   }
 
+  def buffById(entityId: Entity.Id, buffId: Buff.Id): Option[Buff] =
+    tickerBuffs.get(entityId).orElse(passiveBuffs.get(entityId)).flatMap(_.get(buffId))
+
+  def allBuffs: Iterable[Buff] = (passiveBuffs ++ tickerBuffs).values.flatMap(_.values)
+
   /** Creates a partial function which filters all [[gamelogic.entities.Entity]] of the specified type `T`.
     */
   def filterT[T <: Entity](using ClassTag[T]): PartialFunction[Entity, T] = { case entity: T => entity }
@@ -126,9 +131,11 @@ final class GameState(
   @inline def bullets: Map[Entity.Id, Bullet]               = allTEntities[Bullet]
   @inline def damageZones: Map[Entity.Id, DamageZone]       = allTEntities[DamageZone]
   @inline def healUnits: Map[Entity.Id, HealUnit]           = allTEntities[HealUnit]
+  @inline def healingZones: Map[Entity.Id, HealingZone]     = allTEntities[HealingZone]
   @inline def laserLaunchers: Map[Entity.Id, LaserLauncher] = allTEntities[LaserLauncher]
   @inline def mists: Map[Entity.Id, Mist]                   = allTEntities[Mist]
   @inline def players: Map[Entity.Id, Player]               = allTEntities[Player]
+  @inline def smashBullets: Map[Entity.Id, SmashBullet]     = allTEntities[SmashBullet]
 
   def playerById(playerId: Entity.Id): Option[Player] = entityByIdAs[Player](playerId)
 

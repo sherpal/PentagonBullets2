@@ -32,8 +32,7 @@ final case class CreateHealingZone(time: Long, useId: Ability.UseId, casterId: E
       Entity.newId(),
       casterId,
       HealingZone.lifeSupply,
-      targetPos.re,
-      targetPos.im,
+      targetPos,
       AbilitySource
     )
   )

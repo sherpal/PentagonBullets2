@@ -4,6 +4,8 @@ import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.entities.concreteentities.HealingZone
 import gamelogic.gamestate.statetransformers.{GameStateTransformer, WithEntity}
 import gamelogic.gamestate.{GameAction, GameState}
+import be.doeraene.physics.Complex
+import be.doeraene.physics.shape.Circle
 
 /** Happens when a new HealingZone is created.
   */
@@ -13,13 +15,12 @@ final case class NewHealingZone(
     zoneId: Entity.Id,
     ownerId: Entity.Id,
     lifeSupply: Double,
-    xPos: Double,
-    yPos: Double,
+    pos: Complex,
     actionSource: ActionSource
 ) extends GameAction {
 
   def createGameStateTransformer(gameState: GameState): GameStateTransformer =
-    WithEntity(HealingZone(zoneId, time, ownerId, time, lifeSupply, xPos, yPos), time)
+    WithEntity(HealingZone(zoneId, time, ownerId, time, lifeSupply, pos, new Circle(HealingZone.radius)), time)
 
   def changeTime(newTime: Long): GameAction = copy(time = newTime)
 

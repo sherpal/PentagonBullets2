@@ -14,16 +14,13 @@ final case class HealingZone(
     ownerId: Entity.Id,
     lastTick: Long,
     lifeSupply: Double,
-    xPos: Double,
-    yPos: Double,
+    pos: Complex,
     shape: Circle
 ) extends Body {
 
   def subtractLifeSupply(amount: Double): HealingZone = copy(lifeSupply = lifeSupply - amount)
 
   def time: Long = creationTime
-
-  def pos: Complex = Complex(xPos, yPos)
 
   val rotation: Double = 0.0
 
@@ -43,42 +40,5 @@ object HealingZone {
   val tickRate: Long = 500
 
   val lifetime: Long = 60000
-
-  def apply(
-      id: Entity.Id,
-      creationTime: Long,
-      ownerId: Entity.Id,
-      lastTick: Long,
-      lifeSupply: Double,
-      pos: Complex
-  ): HealingZone = new HealingZone(
-    id,
-    creationTime,
-    ownerId,
-    lastTick,
-    lifeSupply,
-    pos.re,
-    pos.im,
-    Circle(radius)
-  )
-
-  def apply(
-      id: Entity.Id,
-      creationTime: Long,
-      ownerId: Entity.Id,
-      lastTick: Long,
-      lifeSupply: Double,
-      xPos: Double,
-      yPos: Double
-  ): HealingZone = new HealingZone(
-    id,
-    creationTime,
-    ownerId,
-    lastTick,
-    lifeSupply,
-    xPos,
-    yPos,
-    Circle(radius)
-  )
 
 }

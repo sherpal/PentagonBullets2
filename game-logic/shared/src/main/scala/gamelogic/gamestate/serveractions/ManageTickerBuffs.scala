@@ -1,6 +1,6 @@
 package gamelogic.gamestate.serveractions
 
-import gamelogic.gamestate.ActionGatherer
+import gamelogic.gamestate.{ActionGatherer, GameAction}
 import gamelogic.gamestate.gameactions.TickerBuffTicks
 import gamelogic.utils.IdGeneratorContainer
 
@@ -10,10 +10,10 @@ import gamelogic.utils.IdGeneratorContainer
   * We set the time for their actions at the last tick plus the tick rate, so that the ticks are at the exact times and
   * without delays.
   */
-object ManageTickerBuffs extends ServerAction {
-  def apply(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
+object ManageTickerBuffs extends ServerActionFromActionList {
+  def createActionList(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
-  ): (ActionGatherer, ServerAction.ServerActionOutput) = {
+  ): List[GameAction] = {
     val startTime = nowGenerator()
     val gameState = currentState.currentGameState
 
@@ -31,8 +31,6 @@ object ManageTickerBuffs extends ServerAction {
       )
       .toList
 
-    val (nextCollector, oldestTime, idsToRemove) = currentState.masterAddAndRemoveActions(tickActions)
-
-    (nextCollector, ServerAction.ServerActionOutput(tickActions, oldestTime, idsToRemove))
+    tickActions
   }
 }

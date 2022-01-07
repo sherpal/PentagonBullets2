@@ -4,6 +4,8 @@ import gamelogic.entities.concreteentities.HealingZone
 import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.gamestate.statetransformers.*
 import gamelogic.gamestate.{GameAction, GameState}
+import be.doeraene.physics.Complex
+import be.doeraene.physics.shape.Circle
 
 /** Happens when a healing zone has to be Updated.
   */
@@ -13,8 +15,7 @@ final case class UpdateHealingZone(
     zoneId: Entity.Id,
     ownerId: Entity.Id,
     lifeSupply: Double,
-    xPos: Double,
-    yPos: Double,
+    pos: Complex,
     actionSource: ActionSource
 ) extends GameAction {
 
@@ -26,8 +27,8 @@ final case class UpdateHealingZone(
         ownerId,
         time,
         lifeSupply,
-        xPos,
-        yPos
+        pos,
+        new Circle(HealingZone.radius)
       ),
       time
     )

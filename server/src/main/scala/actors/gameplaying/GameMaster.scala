@@ -55,7 +55,7 @@ object GameMaster {
       ManageBullets ++
       ((ManageHealUnits parWith ManageDamageZones) parWith
         (ManageBarriers parWith ManageMists)) ++
-      ManageAbilityGivers ++
+      ManageAbilityGivers ++ (ManageSmashBullets parWith ManageHealingZones) ++ ManageBuffsToBeRemoved ++
       ManageEndOfGame
 
   private implicit def wrapServerToClient(serverToClient: ServerToClient): ConnectionActor.ServerToClientWrapper =

@@ -10,7 +10,7 @@ import be.doeraene.physics.Complex
 import assets.Asset
 import game.ui.GameDrawer
 import game.ui.gui.ReactiveGUIDrawer
-import gamecommunication.ClientToServer
+import gamecommunication.{gameActionIdPickler, ClientToServer}
 import gamelogic.utils.Time
 import typings.pixiJs.PIXI.LoaderResource
 import gamelogic.gamestate.gameactions.UpdatePlayerPos
@@ -69,7 +69,11 @@ final class GameStateManager(
   /** Signal giving at all time the game position of the user mouse.
     */
   val $gameMousePosition: Signal[Complex] =
-    userControls.$effectiveMousePosition.map(gameDrawer.camera.mousePosToWorld).startWith(Complex.zero)
+    EventStream
+      .periodic(30)
+      .map(_ => gameDrawer.camera.mousePosToWorld)
+      .combineWithFn(userControls.$effectiveMousePosition)(_(_))
+      .startWith(Complex.zero)
 
   private var unconfirmedActions: List[GameAction] = Nil
 
