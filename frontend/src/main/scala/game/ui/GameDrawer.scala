@@ -70,6 +70,7 @@ final class GameDrawer(
     bulletContainer,
     playerContainer,
     movingStuffContainer,
+    laserLauncherContainer,
     obstacleContainer,
     healingZoneContainer,
     barrierContainer,

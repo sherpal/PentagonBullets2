@@ -19,24 +19,22 @@ final case class LaserAbility(
 ) extends MultiStepAbility
     with ZeroCostAbility {
 
-  val cooldown: Long = 8000
-
   val abilityId: Ability.AbilityId = Ability.laserId
 
-  val innerCooldown: Vector[Long] = Vector(1000, cooldown)
+  val innerCooldown: Vector[Long] = Vector(1000, 8000)
 
   def createActions(
       gameState: GameState
   )(using IdGeneratorContainer): List[GameAction] =
-    if (stepNumber == 0) {
+    if stepNumber == 0 then
       List(NewLaserLauncher(GameAction.newId(), time, Entity.newId(), pos, casterId, AbilitySource))
-    } else {
+    else {
       (
         gameState.players.get(casterId),
-        gameState.allTEntities[LaserLauncher].values.find(_.ownerId == casterId)
+        gameState.laserLaunchers.values.find(_.ownerId == casterId)
       ) match {
         case (Some(caster), Some(laserLauncher)) =>
-          val casterPos: Complex = caster.currentPosition(time - caster.time)
+          val casterPos: Complex = caster.currentPosition(time)
 
           val directionPos     = laserLauncher.pos - casterPos
           val unitVec          = directionPos / directionPos.modulus
@@ -60,7 +58,7 @@ final case class LaserAbility(
               gameState.players.values
                 .filterNot(_.team == teamId)
                 .filter(player =>
-                  player.shape.collides(player.currentPosition(time - player.time), player.rotation, laserShape, 0, 0)
+                  player.shape.collides(player.currentPosition(time), player.rotation, laserShape, 0, 0)
                 )
                 .map(player =>
                   PlayerTakeDamage(GameAction.newId(), time, player.id, casterId, LaserAbility.damage, AbilitySource)

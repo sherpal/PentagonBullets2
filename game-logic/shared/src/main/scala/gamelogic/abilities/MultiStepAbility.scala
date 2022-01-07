@@ -14,10 +14,19 @@ trait MultiStepAbility extends Ability {
 
   val stepNumber: Int
 
+  private def previousStepNumber: Int = (if stepNumber == 0 then innerCooldown.length else stepNumber) - 1
+
   /** Cooldown between the steps. innerCooldown(n) is the cooldown from step n to step n + 1 (mod number of steps) */
   val innerCooldown: Vector[Long]
 
+  def cooldown: Long = innerCooldown(stepNumber)
+
   override def isUp(caster: WithAbilities, now: Long, allowedError: Long = 0): Boolean =
-    now - time + allowedError >= innerCooldown(stepNumber) / caster.allowedAbilities.count(_ == abilityId)
+    caster.relevantUsedAbilities.values
+      .filter(_.abilityId == abilityId)
+      .forall(ability =>
+        (now - ability.time + allowedError) >= innerCooldown(previousStepNumber) / caster.allowedAbilities
+          .count(_ == abilityId)
+      )
 
 }
