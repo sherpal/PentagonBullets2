@@ -20,7 +20,6 @@ object ManageUsedAbilities extends ServerAction {
       .filter(castingInfo => startTime - castingInfo.startedTime >= castingInfo.ability.castingTime)
       .map { castingInfo =>
         val useId = Ability.nextUseId()
-        println("an ability!")
         UseAbilityAction(
           GameAction.newId(),
           startTime,

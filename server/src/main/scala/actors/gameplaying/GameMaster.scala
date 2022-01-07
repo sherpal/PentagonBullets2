@@ -70,7 +70,7 @@ object GameMaster {
     context.log.info("Warning all ConnectionActor of my supreme existence.")
     val beginIn = ServerToClient.BeginIn(3000)
 
-    println(players)
+    context.log.info(s"Players are $players")
     players.values.foreach(_ ! ConnectionActor.HereIsTheGameMaster(context.self))
     players.values.foreach(_ ! ConnectionActor.ServerToClientWrapper(beginIn))
     players.values.foreach(_ ! ServerToClient.AddAndRemoveActions(firstActions, Time.currentTime(), Nil))
@@ -124,11 +124,15 @@ object GameMaster {
         val startTime     = now
         val sortedActions = info.pendingActions.sorted.map(_.setId(GameAction.newId()))
 
-        sortedActions.filterNot(_.isInstanceOf[UpdatePlayerPos]).foreach(println)
+        val sortedActionsWithMaybeErrorMessages =
+          sortedActions.map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))
 
-        sortedActions
-          .map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))
-          .collect { case (action, Some(message)) => (action, message) }
+        val (illegalActionsWithMessage, _) = sortedActionsWithMaybeErrorMessages.partitionMap {
+          case (action, Some(message)) => Left((action, message))
+          case (action, None)          => Right(action)
+        }
+
+        illegalActionsWithMessage
           .foreach((action, message) =>
             context.log.warn(s"Received this action $action but is was not legal, message is: $message.")
           )
@@ -167,7 +171,7 @@ object GameMaster {
               gameLoopTo(context.self, (gameLoopTiming - timeSpent).millis)
             )
 
-            if finalCollector.currentGameState.ended then Behaviors.stopped(() => println("game ended."))
+            if finalCollector.currentGameState.ended then Behaviors.stopped(() => context.log.info("game ended."))
             else gameRunningReceiver(info.afterGameLoop(finalCollector))
 
 //          if finalCollector.currentGameState.ended && !alreadyClosing then {
@@ -214,7 +218,7 @@ object GameMaster {
         gameRunningReceiver(info.addPendingActions(toKeep))
       case PlayerDisconnected(playerName) =>
         val newInfo = info.playerDisconnected(playerName)
-        if newInfo.players.isEmpty then Behaviors.stopped(() => println("Everyone is gone"))
+        if newInfo.players.isEmpty then Behaviors.stopped(() => context.log.info("Everyone is gone"))
         else gameRunningReceiver(newInfo)
     }
   }

@@ -121,13 +121,14 @@ final class GameState(
   def allTEntities[T <: Entity](using ClassTag[T]): Map[Entity.Id, T] =
     entities.collect { case (id, entity: T) => (id, entity) }
 
-  @inline def abilityGivers: Map[Entity.Id, AbilityGiver] = allTEntities[AbilityGiver]
-  @inline def barriers: Map[Entity.Id, Barrier]           = allTEntities[Barrier]
-  @inline def bullets: Map[Entity.Id, Bullet]             = allTEntities[Bullet]
-  @inline def damageZones: Map[Entity.Id, DamageZone]     = allTEntities[DamageZone]
-  @inline def healUnits: Map[Entity.Id, HealUnit]         = allTEntities[HealUnit]
-  @inline def mists: Map[Entity.Id, Mist]                 = allTEntities[Mist]
-  @inline def players: Map[Entity.Id, Player]             = allTEntities[Player]
+  @inline def abilityGivers: Map[Entity.Id, AbilityGiver]   = allTEntities[AbilityGiver]
+  @inline def barriers: Map[Entity.Id, Barrier]             = allTEntities[Barrier]
+  @inline def bullets: Map[Entity.Id, Bullet]               = allTEntities[Bullet]
+  @inline def damageZones: Map[Entity.Id, DamageZone]       = allTEntities[DamageZone]
+  @inline def healUnits: Map[Entity.Id, HealUnit]           = allTEntities[HealUnit]
+  @inline def laserLaunchers: Map[Entity.Id, LaserLauncher] = allTEntities[LaserLauncher]
+  @inline def mists: Map[Entity.Id, Mist]                   = allTEntities[Mist]
+  @inline def players: Map[Entity.Id, Player]               = allTEntities[Player]
 
   def playerById(playerId: Entity.Id): Option[Player] = entityByIdAs[Player](playerId)
 

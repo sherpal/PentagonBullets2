@@ -5,14 +5,13 @@ import gamecommunication.ClientToServer
 import gamelogic.entities.*
 import gamelogic.gamestate.{GameAction, GameState}
 import be.doeraene.physics.Complex
-import gamelogic.abilities.Ability
+import gamelogic.abilities.*
 import game.ui.GameDrawer
 import gamelogic.entities.ActionSource.PlayerSource
 import gamelogic.entities.concreteentities.Player
 import models.playing.UserInput
 import gamelogic.gamestate.gameactions.*
 import gamelogic.utils.IdGeneratorContainer
-import gamelogic.abilities.*
 import gamelogic.abilities.Ability.*
 
 /** Singleton adding the effect of casting abilities.
@@ -26,7 +25,8 @@ final class CastAbilitiesHandler(
     useAbilityEvents: EventStream[Ability.AbilityId],
     gameDrawer: GameDrawer,
     deltaTimeWithServer: Long,
-    currentTime: () => Long
+    currentTime: () => Long,
+    setUnconfirmedActions: List[GameAction] => Unit
 )(implicit owner: Owner) {
   private def serverTime = currentTime()
 
@@ -46,6 +46,7 @@ final class CastAbilitiesHandler(
       fn: (GameState, Complex, Player) => Option[A]
   )
 
+  /** Below, the `targetPos` argument is the position of the mouse in the world */
   private val allAbilityMakers: List[AbilityMaker[Ability]] = List(
     AbilityMaker(
       activateShieldId,
@@ -79,27 +80,65 @@ final class CastAbilitiesHandler(
     ),
     AbilityMaker(
       createHealingZoneId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, targetPos, player) => {
+        val time    = serverTime
+        val ability = CreateHealingZone(time, dummyUseId, player.id, targetPos)
+        Option.when(ability.isLegal(gameState, time))(ability)
+      }
     ),
     AbilityMaker(
       laserId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, targetPos, player) => {
+        val time       = serverTime
+        val stepNumber = LaserAbility.stepFromGameState(gameState, player.id)
+
+        val ability = LaserAbility(time, dummyUseId, player.id, player.team, stepNumber, targetPos)
+        Option.when(ability.isLegal(gameState, time))(ability)
+      }
     ),
     AbilityMaker(
       launchSmashBulletId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, targetPos, player) => {
+        val rotation    = (targetPos - player.pos).arg
+        val startingPos = player.pos + Player.radius * Complex.rotation(rotation)
+        val time        = serverTime
+        val ability     = LaunchSmashBullet(time, dummyUseId, player.id, startingPos, rotation)
+        Option.when(ability.isLegal(gameState, time))(ability)
+      }
     ),
     AbilityMaker(
       putBulletGlueId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, worldMousePos, player) => {
+        val time    = serverTime
+        val ability = PutBulletGlue(time, dummyUseId, player.id, player.team)
+        Option.when(ability.isLegal(gameState, time))(ability)
+      }
     ),
     AbilityMaker(
       teleportationId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, targetPos, player) => {
+        val time = serverTime
+
+        val ability = Teleportation(time, dummyUseId, playerId, player.pos, targetPos)
+
+        ability.canBeCast(gameState, time).foreach(message => org.scalajs.dom.console.error(message))
+
+        Option.when(ability.isLegal(gameState, time) && ability.isUp(player, time)) {
+          setUnconfirmedActions(ability.createActions(gameState))
+          ability
+        }
+      }
     ),
     AbilityMaker(
       tripleBulletId,
-      (gameState, worldMousePos, player) => ???
+      (gameState, targetPos, player) => {
+        val time        = serverTime
+        val rotation    = (targetPos - player.pos).arg
+        val startingPos = player.pos + Player.radius * Complex.rotation(rotation)
+
+        val ability = TripleBullet(time, dummyUseId, player.id, player.team, startingPos, rotation)
+        Option.when(ability.isLegal(gameState, time))(ability)
+      }
     )
   )
 
@@ -115,7 +154,6 @@ final class CastAbilitiesHandler(
         .collect { case (input, gameState, Some(me)) => (input, gameState, me) }
         .withCurrentValueOf($gameMousePosition)
         .map { case (abilityInput, gameState, me, worldMousePos) =>
-          println((gameState, abilityInput.abilityId(me), worldMousePos, me))
           (gameState, abilityInput.abilityId(me), worldMousePos, me)
         }
         .collect { case (gameState, Some(abilityId), worldMousePos, me) => (gameState, abilityId, worldMousePos, me) },
@@ -127,15 +165,10 @@ final class CastAbilitiesHandler(
     )
     .filter(_._1.isPlaying)
     .foreach { case (gameState: GameState, abilityId: Ability.AbilityId, worldMousePos: Complex, me: Player) =>
-      println(s"ability id is $abilityId")
       val maybeAbility: Option[Ability] = abilityMakerFromAbilityId.get(abilityId) match {
         case Some(fn) => fn(gameState, worldMousePos, me)
         case None     => throw new RuntimeException(s"This ability Id ($abilityId) is not supported yet.")
       }
-
-      println(s"Ability is: $maybeAbility")
-      println(s"Player pos is ${me.pos}")
-      println(s"Is up is ${maybeAbility.map(_.isUp(me, serverTime, 1000))}")
 
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }

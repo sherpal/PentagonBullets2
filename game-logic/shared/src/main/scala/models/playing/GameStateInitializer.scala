@@ -53,7 +53,7 @@ object GameStateInitializer {
         gameArea.gameAreaSideLength,
         ServerSource
       )
-    )
+    ).filter(_ => gameInfo.players.size > 2)
 
     val centerOctagonRadius: Double = 50.0 * math.sqrt(2)
 
@@ -63,7 +63,7 @@ object GameStateInitializer {
     val newPlayerActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
 
     val gameStateAfterNewPlayers: GameState =
-      initialGameState.applyActions(godActions ++ createObstaclesActions ++ newPlayerActions)
+      initialGameState.applyActions(godActions ++ createMists ++ createObstaclesActions ++ newPlayerActions)
 
     assert(
       gameStateAfterNewPlayers

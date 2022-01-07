@@ -21,6 +21,7 @@ import models.playing.UserInput
 import gamelogic.abilities.Ability
 import utils.pixi.monkeypatching.PIXIPatching.TickerWithDoubleAdd
 import gamelogic.entities.ActionSource.PlayerSource
+import org.scalajs.dom
 
 import scala.scalajs.js.timers.{setInterval, setTimeout}
 import scala.scalajs.js
@@ -37,9 +38,10 @@ final class GameStateManager(
     deltaTimeWithServer: Long,
     resources: PartialFunction[Asset, LoaderResource]
 )(implicit owner: Owner) {
-  println("Game State Manager initialized")
 
-  beginInEvents.foreach(beginIn => println(s"Game Begins in ${beginIn.millis} millis"))
+  dom.console.info(s"Your id is $playerId.")
+
+  beginInEvents.foreach(beginIn => dom.console.info(s"Game Begins in ${beginIn.millis} millis"))
 
   @inline def serverTime: Long         = System.currentTimeMillis() + deltaTimeWithServer
   @inline def application: Application = reactiveStage.application
@@ -105,7 +107,8 @@ final class GameStateManager(
     useAbilityEvents = useAbilityBus.events,
     gameDrawer = gameDrawer,
     deltaTimeWithServer = deltaTimeWithServer,
-    currentTime = () => serverTime
+    currentTime = () => serverTime,
+    setUnconfirmedActions = unconfirmedActions = _
   )
 
   val guiDrawer = new ReactiveGUIDrawer(playerId, reactiveStage, resources, useAbilityBus.writer, gameStateUpdates)
@@ -175,6 +178,7 @@ final class GameStateManager(
   }
 
   private val ticker = (_: Double) => {
+    nextGameState() // need for last unconfirmed actions to kick in
     val info = gameLoopInfoSignal.now()
 
     val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
@@ -194,14 +198,21 @@ final class GameStateManager(
 
           nextGameState()
         }
-      case None => // nothing to do
+      case None if gameState.started =>
         val cameraSize = gameState.mists.values.headOption match {
           case None       => gameState.gameAreaSideLength.toDouble
           case Some(mist) => mist.sideLength * 1.1
         }
 
-        gameDrawer.camera.worldWidth = cameraSize
-        gameDrawer.camera.worldHeight = cameraSize
+        val widthToHeightRatio = gameDrawer.camera.worldWidth / gameDrawer.camera.worldHeight
+
+        if widthToHeightRatio > 1 then
+          gameDrawer.camera.worldWidth = cameraSize * widthToHeightRatio
+          gameDrawer.camera.worldHeight = cameraSize
+        else
+          gameDrawer.camera.worldWidth = cameraSize
+          gameDrawer.camera.worldHeight = cameraSize / widthToHeightRatio
+      case None => // nothing to do
     }
 
     val now             = serverTime

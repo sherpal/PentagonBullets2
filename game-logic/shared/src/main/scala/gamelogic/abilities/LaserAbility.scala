@@ -82,4 +82,7 @@ object LaserAbility {
 
   val damage: Double = 30
 
+  def stepFromGameState(gameState: GameState, casterId: Entity.Id): Int =
+    if gameState.laserLaunchers.values.exists(_.ownerId == casterId) then 1 else 0
+
 }

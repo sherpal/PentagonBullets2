@@ -37,7 +37,7 @@ final case class Teleportation(
         )
         .orElse(
           Option.unless(
-            gameState.gameBounds.collides(Complex(0, 0), 0, entity.shape, endPos, entity.rotation)
+            gameState.gameBounds.contains(endPos)
           )("Target position must be within game bounds!")
         )
     })

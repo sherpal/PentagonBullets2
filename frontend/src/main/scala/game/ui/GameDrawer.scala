@@ -93,17 +93,17 @@ final class GameDrawer(
       .groupBy(_.team)
       .map((teamId, players) => teamId -> players.minBy(_.id).colour)
 
-    drawAbilityGivers(gameState.allTEntities[AbilityGiver])
+    drawAbilityGivers(gameState.abilityGivers)
     drawBarriers(gameState, playerColours)
     drawPlayerBuffs(gameState, currentTime)
     drawBullets(gameState, currentTime, playerColours)
-    drawDamageZones(gameState.allTEntities[DamageZone])
+    drawDamageZones(gameState.damageZones)
     drawGunTurrets(gameState, playerColours)
     drawHealingZones(gameState, playerColours)
-    drawHealUnits(gameState.allTEntities[HealUnit])
+    drawHealUnits(gameState.healUnits)
     drawLaserLauncher(gameState, playerColours)
-    drawMists(gameState.allTEntities[Mist])
-    drawObstacles(gameState.allTEntities[Obstacle].values.toList)
+    drawMists(gameState.mists)
+    drawObstacles(gameState.obstacles.values.toList)
     drawPlayers(gameState, currentTime, teamColours)
 
   }
