@@ -5,9 +5,12 @@ import models.playing.Controls
 import models.playing.KeyboardControls
 import models.syntax.Pointed
 import org.scalajs.dom
-import io.circe.generic.auto._
+import io.circe.generic.semiauto._
+import io.circe.Codec
 
 object controls {
+
+  implicit val controlsCodec: Codec[Controls] = deriveCodec
 
   private val keyboardControlsKeyM = createKey(KeyboardControls.storageKey)
   private val controlsKeyM         = createKey(Controls.storageKey)

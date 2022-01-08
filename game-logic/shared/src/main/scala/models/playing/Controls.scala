@@ -2,7 +2,8 @@ package models.playing
 
 import models.playing.Controls.InputCode
 import models.syntax.Pointed
-import io.circe.Encoder
+import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto._
 
 /** Gathers all possible inputs that the user assigned. The [[InputCode]]s in argument have the knowledge of what device
   * is the source of the input.
@@ -12,22 +13,32 @@ final case class Controls(
     downKey: InputCode,
     leftKey: InputCode,
     rightKey: InputCode,
+    defaultBulletAbilityKey: InputCode,
     chosenAbilityKey: InputCode,
     shieldAbilityKey: InputCode,
     abilityKeys: List[InputCode]
 ) {
 
   lazy val controlMap: Map[InputCode, UserInput] = Map(
-    upKey            -> UserInput.Up,
-    downKey          -> UserInput.Down,
-    leftKey          -> UserInput.Left,
-    rightKey         -> UserInput.Right,
-    shieldAbilityKey -> UserInput.ShieldAbility,
-    chosenAbilityKey -> UserInput.AbilityInput(0)
+    upKey                   -> UserInput.Up,
+    downKey                 -> UserInput.Down,
+    leftKey                 -> UserInput.Left,
+    rightKey                -> UserInput.Right,
+    defaultBulletAbilityKey -> UserInput.DefaultBullets,
+    shieldAbilityKey        -> UserInput.ShieldAbility,
+    chosenAbilityKey        -> UserInput.AbilityInput(0)
   ) ++ abilityKeys.zipWithIndex.map { case (code, idx) => code -> UserInput.AbilityInput(idx) }.toMap
 
   def allKeysInMultiple: List[InputCode] =
-    (List(upKey, downKey, rightKey, leftKey, shieldAbilityKey, chosenAbilityKey) ++ abilityKeys)
+    (List(
+      upKey,
+      downKey,
+      rightKey,
+      leftKey,
+      shieldAbilityKey,
+      chosenAbilityKey,
+      defaultBulletAbilityKey
+    ) ++ abilityKeys)
       .groupBy(identity)
       .filter(_._2.length > 1)
       .keys
@@ -59,6 +70,12 @@ object Controls {
     def label: String
   }
 
+  object InputCode {
+    private case class Tpe(tpe: String)
+
+    implicit def codec: Codec[InputCode] = deriveCodec
+  }
+
   sealed trait KeyInputModifier {
     def name: String
   }
@@ -86,12 +103,13 @@ object Controls {
       KeyCode("KeyS"),
       KeyCode("KeyA"),
       KeyCode("KeyD"),
+      MouseCode(0),
       MouseCode(2),
       KeyCode("KeyE"),
       (1 to 10).map(_ % 10).map("Digit" + _).map(KeyCode.apply).toList
     )
   )
 
-  val storageKey = "controls"
+  val storageKey = "pentagonBulletsControls"
 
 }

@@ -8,7 +8,7 @@ import be.doeraene.physics.Complex
 import gamelogic.abilities.*
 import game.ui.GameDrawer
 import gamelogic.entities.ActionSource.PlayerSource
-import gamelogic.entities.concreteentities.Player
+import gamelogic.entities.concreteentities.{Bullet, Player}
 import models.playing.UserInput
 import gamelogic.gamestate.gameactions.*
 import gamelogic.utils.IdGeneratorContainer
@@ -145,8 +145,6 @@ final class CastAbilitiesHandler(
   private val abilityMakerFromAbilityId: Map[Ability.AbilityId, (GameState, Complex, Player) => Option[Ability]] =
     allAbilityMakers.map(maker => maker.abilityId -> maker.fn).toMap
 
-  userControls.downInputs.foreach(println)
-
   EventStream
     .merge(
       userControls.downInputs
@@ -179,6 +177,34 @@ final class CastAbilitiesHandler(
       }
 
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
+    }
+
+  userControls.downInputs
+    .collect { case UserInput.DefaultBullets => () }
+    .sample($gameStates, $gameMousePosition)
+    .map((gameState, worldMousePos) => (gameState, gameState.playerById(playerId), worldMousePos))
+    .collect { case (gameState, Some(me), worldMousePos) => (gameState, me, worldMousePos) }
+    .foreach { (gameState: GameState, me: Player, worldMousePos: Complex) =>
+      val direction = (worldMousePos - me.pos).normalized
+      socketOutWriter.onNext(
+        ClientToServer.GameActionWrapper(
+          List(
+            NewBullet(
+              GameAction.newId(),
+              Entity.newId(),
+              playerId,
+              me.team,
+              me.pos + me.shape.radius * direction,
+              Bullet.defaultRadius,
+              direction.arg,
+              Bullet.speed,
+              serverTime,
+              0,
+              PlayerSource
+            )
+          )
+        )
+      )
     }
 
 }

@@ -202,7 +202,14 @@ object GameMaster {
     (newInfo, theTimeSpent) <- ZIO.effect {
       implicit def idGenerator: IdGeneratorContainer = info.idGeneratorContainer
       val startTime                                  = now
-      val sortedActions                              = newActions.sorted.map(_.setId(GameAction.newId()))
+      val sortedActions = newActions
+        .map {
+          case action: NewBullet =>
+            action.copy(id = gamelogic.entities.Entity.newId())
+          case other => other
+        }
+        .sorted
+        .map(_.setId(GameAction.newId()))
 
       val sortedActionsWithMaybeErrorMessages =
         sortedActions.map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))

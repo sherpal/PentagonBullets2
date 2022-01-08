@@ -35,7 +35,7 @@ trait BulletDrawer extends Drawer {
         case Some(elem) =>
           elem
         case None =>
-          val elem = newDisk(bullet.radius, colors(bullet.ownerId))
+          val elem = newDisk(bullet.radius, colors.getOrElse(bullet.ownerId, RGBColour.orange))
           bulletStage.addChild(elem)
 
           elem.anchor.set(0.5, 0.5)

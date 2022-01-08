@@ -106,6 +106,15 @@ object ControlsEditorComponent {
           }
         }
       ),
+      button(
+        "Restore defaults",
+        onClick.mapTo(()) --> ((_: Unit) =>
+          frontend.runtime.unsafeRunToFuture(
+            resetControls *> feedCurrentControl
+          )
+          ()
+        )
+      ),
       onMountZIO(feedCurrentControl),
       waitForAssignWindow
     )

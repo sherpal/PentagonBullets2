@@ -27,6 +27,9 @@ final class UserControls(keyboard: Keyboard, mouse: Mouse) {
 
   def $mouseClicks: EventStream[MouseEvent] = mouse.$mouseClicks
 
+  def leftClickDownEvents: EventStream[Unit] = mouse.leftClickDownEvents
+  def leftClickUpEvents: EventStream[Unit]   = mouse.leftClickUpEvents
+
   def effectiveMousePos(event: MouseEvent): Complex = mouse.effectiveMousePos(event)
 
 }

@@ -3,10 +3,10 @@ package game.ui.gui.reactivecomponents
 import assets.Asset
 import com.raquo.laminar.api.A.*
 import gamelogic.entities.Entity
-import game.ui.reactivepixi.AttributeModifierBuilder._
-import game.ui.reactivepixi.EventModifierBuilder._
+import game.ui.reactivepixi.AttributeModifierBuilder.*
+import game.ui.reactivepixi.EventModifierBuilder.*
 import game.ui.reactivepixi.PixiModifier
-import game.ui.reactivepixi.ReactivePixiElement._
+import game.ui.reactivepixi.ReactivePixiElement.*
 import typings.pixiJs.PIXI.{Graphics, LoaderResource, Texture}
 import gamelogic.entities.concreteentities.Player
 import gamelogic.gamestate.GameState
@@ -14,6 +14,8 @@ import typings.pixiJs.anon.Align
 import typings.pixiJs.mod.{Rectangle, TextStyle}
 import utils.misc.RGBColour
 import be.doeraene.physics.Complex
+import be.doeraene.physics.shape.Polygon
+import models.syntax.Pointed
 
 //noinspection TypeAnnotation
 final class PlayerFrame(
@@ -31,7 +33,18 @@ final class PlayerFrame(
 
   // Calling deadPlayers is safe because a player is either alive or dead.
   val entityEvents = onlyGameStates
-    .map(gameState => gameState.entityByIdAs[Player](entityId).getOrElse(gameState.deadPlayers(entityId)))
+    .map(gameState =>
+      try gameState.entityByIdAs[Player](entityId).getOrElse(gameState.deadPlayers(entityId))
+      catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          println(gameState.players)
+          println(gameState.deadPlayers)
+          implicit def entityIdPointed: Pointed[Entity.Id] = Pointed.factory(entityId)
+          implicit def polygonPointed: Pointed[Polygon]    = Pointed.factory(Player.shape)
+          Pointed[Player].unit.copy(name = "aaaaaaaaarh")
+      }
+    )
 
   val entityIsAliveEvents = onlyGameStates.map(_.isPlayerAlive(entityId))
 

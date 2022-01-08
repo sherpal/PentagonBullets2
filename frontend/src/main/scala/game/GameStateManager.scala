@@ -116,8 +116,6 @@ final class GameStateManager(
     setUnconfirmedActions = unconfirmedActions = _
   )
 
-  userControls.$mouseClicks
-
   val guiDrawer = new ReactiveGUIDrawer(
     playerId,
     reactiveStage,

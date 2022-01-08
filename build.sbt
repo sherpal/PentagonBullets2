@@ -20,7 +20,9 @@ val commonSettings = List(
     "-Xfatal-warnings",
     "-deprecation",
     "-unchecked",
-    "-language:higherKinds"
+    "-language:higherKinds",
+    "-Xmax-inlines",
+    "64"
   )
 )
 

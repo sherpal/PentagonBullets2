@@ -32,7 +32,7 @@ final class AbilityButton(
       gameStateUpdates
         .map { case (gameState, currentTime) =>
           (for {
-            player  <- gameState.players.get(playerId)
+            player  <- gameState.playerById(playerId)
             lastUse <- player.relevantUsedAbilities.values.filter(_.abilityId == abilityId).maxByOption(_.time)
             elapsedTime = currentTime - lastUse.time
             value       = 1.0 - elapsedTime / lastUse.cooldown.toDouble

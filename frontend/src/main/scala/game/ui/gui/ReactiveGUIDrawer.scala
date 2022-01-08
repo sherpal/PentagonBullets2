@@ -68,7 +68,7 @@ final class ReactiveGUIDrawer(
   val abilityButtonContainer: ReactiveContainer = new GridContainer(
     GridContainer.Column,
     gameStateUpdates
-      .map(_._1.players.get(playerId))
+      .map(_._1.playerById(playerId))
       .collect { case Some(player) => player.allowedAbilities.distinct }
       .toSignal(List.empty)
       .map { abilities =>

@@ -32,6 +32,8 @@ object UserInput {
     def direction: Complex = -1
   }
 
+  case object DefaultBullets extends UserInput
+
   case object ShieldAbility extends UserInput
 
   /** Represent */

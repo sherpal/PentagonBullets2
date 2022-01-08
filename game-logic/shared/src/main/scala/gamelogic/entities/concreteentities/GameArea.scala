@@ -44,34 +44,34 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
 
   def randomComplexPos(mist: Mist): Complex = Complex.fromTuple(randomPos(mist))
 
-  val topEdgeVertices: (Complex, Vector[Complex]) = (
+  lazy val topEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(0, height / 2 + 5),
     Obstacle.segmentObstacleVertices(-width / 2 - 10, width / 2 + 10, 10)
   )
 
-  val bottomEdgeVertices: (Complex, Vector[Complex]) = (
+  lazy val bottomEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(0, -height / 2 - 5),
     Obstacle.segmentObstacleVertices(-width / 2 - 10, width / 2 + 10, 10)
   )
 
-  val leftEdgeVertices: (Complex, Vector[Complex]) = (
+  lazy val leftEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(-width / 2 - 5, 0),
     Obstacle.segmentObstacleVertices(-i * height / 2, i * height / 2, 10)
   )
 
-  val rightEdgeVertices: (Complex, Vector[Complex]) = (
+  lazy val rightEdgeVertices: (Complex, Vector[Complex]) = (
     Complex(width / 2 + 5, 0),
     Obstacle.segmentObstacleVertices(-i * height / 2, i * height / 2, 10)
   )
 
-  val gameAreaEdgesVertices: List[(Complex, Vector[Complex])] = List(
+  lazy val gameAreaEdgesVertices: List[(Complex, Vector[Complex])] = List(
     topEdgeVertices,
     bottomEdgeVertices,
     leftEdgeVertices,
     rightEdgeVertices
   )
 
-  val gameVertices: Vector[Complex] = Vector(
+  lazy val gameVertices: Vector[Complex] = Vector(
     topEdgeVertices._1 + leftEdgeVertices._1,
     bottomEdgeVertices._1 + leftEdgeVertices._1,
     bottomEdgeVertices._1 + rightEdgeVertices._1,
