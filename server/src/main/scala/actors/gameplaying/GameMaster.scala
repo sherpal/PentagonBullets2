@@ -9,15 +9,18 @@ import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.utils.IdGeneratorContainer
 import models.menus.PlayerName
 import gamelogic.utils.Time
-import zio.ZIO
+import zio.{UIO, ZIO}
+import scala.util.{Failure, Success}
 import zio.duration.Duration.fromScala
 import gamelogic.entities.concreteentities.GameArea
 import gamelogic.gamestate.serveractions.*
 
 import scala.concurrent.duration.*
 import gamelogic.gamestate.{ActionGatherer, GreedyActionGatherer}
+import org.slf4j.Logger
 
 import java.time.LocalDateTime
+import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
 /** The [[GameMaster]] actually runs the game loop and manages the game state.
@@ -27,12 +30,13 @@ object GameMaster {
   private def now = System.currentTimeMillis
 
   /** In millis */
-  final val gameLoopTiming = 1000L / 30L
+  final val gameLoopTiming = 1000L / 120L
 
   sealed trait Command
 
   /** Sent by this actor to itself to run the game loop. We try to keep a rate of 120 per second. */
   private case object GameLoop extends Command
+  private case object GameEnded extends Command
 
   private case class InternalActions(gameActions: List[GameAction]) extends Command
 
@@ -42,13 +46,6 @@ object GameMaster {
 
   /** Actions were sent by the external world. */
   case class MultipleActionsWrapper(gameActions: List[GameAction], playerName: PlayerName) extends Command
-
-  private def gameLoopTo(to: ActorRef[GameLoop.type], delay: FiniteDuration) =
-    for {
-      fiber <- zio.clock.sleep(fromScala(delay)).fork
-      _     <- fiber.join
-      _     <- ZIO.effectTotal(to ! GameLoop)
-    } yield ()
 
   private val serverAction =
     ManageDeadPlayers ++
@@ -92,10 +89,14 @@ object GameMaster {
     Behaviors.receiveMessage {
       case GameLoop =>
         context.log.info("Game about to begin")
+        val queue    = zio.Runtime.default.unsafeRun(zio.Queue.unbounded[GameAction])
+        val offerAll = (gameActions: Iterable[GameAction]) => zio.Runtime.default.unsafeRun(queue.offerAll(gameActions))
         context.scheduleOnce(1.second, context.self, Heartbeat)
         context.self ! InternalActions(List(GameBegins(GameAction.newId(), now, gameArea.gameBounds, ServerSource)))
         context.self ! GameLoop
-        gameRunningReceiver(GameRunningInfo(actionGatherer, Nil, idGeneratorContainer, players))
+        gameRunningReceiver(
+          GameRunningInfo(actionGatherer, Nil, idGeneratorContainer, players, queue, offerAll, () => {})
+        )
       case _ => Behaviors.unhandled
     }
   }
@@ -104,11 +105,17 @@ object GameMaster {
       actionGatherer: ActionGatherer,
       pendingActions: List[GameAction],
       idGeneratorContainer: IdGeneratorContainer,
-      players: Map[PlayerName, ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]]
+      players: Map[PlayerName, ActorRef[ConnectionActor.ForExternalWorld | ConnectionActor.HereIsTheGameMaster]],
+      actionQueue: zio.Queue[GameAction],
+      offerActions: Iterable[GameAction] => Boolean,
+      cancelRunner: () => Unit
   ) {
     implicit def idGenerator: IdGeneratorContainer = idGeneratorContainer
 
+    def ended: Boolean = actionGatherer.currentGameState.ended
+
     def addPendingActions(actions: List[GameAction]): GameRunningInfo =
+      offerActions(actions)
       copy(pendingActions = actions ++ pendingActions)
 
     def afterGameLoop(newActionGatherer: ActionGatherer): GameRunningInfo =
@@ -119,95 +126,38 @@ object GameMaster {
 
     def playerDisconnected(playerName: PlayerName): GameRunningInfo =
       copy(players = players - playerName)
+
+    def addCancelRunner(cancelProcedure: () => Unit): GameRunningInfo =
+      copy(cancelRunner = () => {
+        cancelRunner()
+        cancelProcedure()
+      })
   }
 
   private def gameRunningReceiver(info: GameRunningInfo): Behavior[Command] = Behaviors.receive { (context, command) =>
     import info.idGenerator
     command match {
       case GameLoop =>
-        val startTime     = now
-        val sortedActions = info.pendingActions.sorted.map(_.setId(GameAction.newId()))
-
-        val sortedActionsWithMaybeErrorMessages =
-          sortedActions.map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))
-
-        val (illegalActionsWithMessage, _) = sortedActionsWithMaybeErrorMessages.partitionMap {
-          case (action, Some(message)) => Left((action, message))
-          case (action, None)          => Right(action)
+        implicit def ec: ExecutionContext = context.system.executionContext
+        val runner                        = zio.Runtime.default.unsafeRunToFuture(gameLoop(info)(context.log))
+        runner onComplete {
+          case Success(_) => context.self ! GameEnded
+          case Failure(exception) =>
+            exception.printStackTrace()
+            context.self ! GameEnded
         }
 
-        illegalActionsWithMessage
-          .foreach((action, message) =>
-            context.log.warn(s"Received this action $action but is was not legal, message is: $message.")
+        gameRunningReceiver(
+          info.addCancelRunner(() =>
+            runner.cancel().onComplete {
+              case Failure(exception) =>
+                context.log.info("Error while cancelling runner, this is bad")
+                exception.printStackTrace()
+              case Success(_) =>
+                context.log.info("Error cancelled.")
+            }
           )
-
-        try {
-
-          /** First adding actions from entities */
-          val (nextCollector, oldestTimeToRemove, idsToRemove) =
-            info.actionGatherer.masterAddAndRemoveActions(sortedActions)
-
-          /** Making all the server specific checks */
-          val (finalCollector, output) = serverAction(nextCollector, () => System.currentTimeMillis)
-
-          /** Sending outcome back to entities. */
-          val finalOutput = ServerAction.ServerActionOutput(
-            sortedActions,
-            oldestTimeToRemove,
-            idsToRemove
-          ) merge output
-          if finalOutput.createdActions.nonEmpty then
-            info.broadcast(
-              ServerToClient.AddAndRemoveActions(
-                finalOutput.createdActions,
-                finalOutput.oldestTimeToRemove,
-                finalOutput.idsOfIdsToRemove
-              )
-            )
-
-          /** Set up for next loop. */
-          val timeSpent = now - startTime
-          if timeSpent > gameLoopTiming then
-            context.self ! GameLoop
-            gameRunningReceiver(info.afterGameLoop(finalCollector))
-          else
-            zio.Runtime.default.unsafeRunToFuture(
-              gameLoopTo(context.self, (gameLoopTiming - timeSpent).millis)
-            )
-
-            if finalCollector.currentGameState.ended then Behaviors.stopped(() => context.log.info("game ended."))
-            else gameRunningReceiver(info.afterGameLoop(finalCollector))
-
-//          if finalCollector.currentGameState.ended && !alreadyClosing then {
-//            zio.Runtime.default.unsafeRunToFuture(
-//              closeServerAfter(context.self, 1.minute)
-//            )
-//
-//            val endOfGameActions =
-//              bossFactory.flatMap(_.whenBossDiesActions(finalCollector.currentGameState, now, idGeneratorContainer))
-//
-//            val (endOfGameCollector, oldestTimeToRemove, idsToRemove) =
-//              actionCollector.masterAddAndRemoveActions(endOfGameActions)
-//
-//            actionUpdateCollector ! ActionUpdateCollector.GameStateWrapper(endOfGameCollector.currentGameState)
-//            actionUpdateCollector ! ActionUpdateCollector
-//              .AddAndRemoveActions(
-//                endOfGameActions,
-//                oldestTimeToRemove,
-//                idsToRemove
-//              )
-//
-//            inGameBehaviour(Nil, actionUpdateCollector, endOfGameCollector, bossFactory, alreadyClosing = true)
-//          } else {
-//            inGameBehaviour(Nil, actionUpdateCollector, finalCollector, bossFactory)
-//          }
-
-        } catch {
-          case e: Throwable =>
-            context.log.error("Error in game loop!", e)
-            throw e
-        }
-
+        )
       case InternalActions(gameActions) =>
         gameRunningReceiver(info.addPendingActions(gameActions))
       case MultipleActionsWrapper(gameActions, playerName) =>
@@ -225,8 +175,77 @@ object GameMaster {
         Behaviors.same
       case PlayerDisconnected(playerName) =>
         val newInfo = info.playerDisconnected(playerName)
-        if newInfo.players.isEmpty then Behaviors.stopped(() => context.log.info("Everyone is gone"))
+        if newInfo.players.isEmpty then
+          newInfo.cancelRunner()
+          Behaviors.stopped(() => context.log.info("Everyone is gone"))
         else gameRunningReceiver(newInfo)
+      case GameEnded =>
+        context.log.info("Game Ended.")
+        Behaviors.stopped
     }
   }
+
+  private def gameLoopTo(to: ActorRef[GameLoop.type], delay: FiniteDuration) =
+    for {
+      fiber <- zio.clock.sleep(fromScala(delay)).fork
+      _     <- fiber.join
+      _     <- ZIO.effectTotal(to ! GameLoop)
+    } yield ()
+
+  private def gameLoop(info: GameRunningInfo)(implicit
+      log: Logger
+  ): ZIO[zio.clock.Clock, Throwable, Unit] = (for {
+    newActions <- info.actionQueue.takeAll
+    (newInfo, theTimeSpent) <- ZIO.effect {
+      implicit def idGenerator: IdGeneratorContainer = info.idGeneratorContainer
+      val startTime                                  = now
+      val sortedActions                              = newActions.sorted.map(_.setId(GameAction.newId()))
+
+      val sortedActionsWithMaybeErrorMessages =
+        sortedActions.map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))
+
+      val (illegalActionsWithMessage, _) = sortedActionsWithMaybeErrorMessages.partitionMap {
+        case (action, Some(message)) => Left((action, message))
+        case (action, None)          => Right(action)
+      }
+
+      illegalActionsWithMessage
+        .foreach((action, message) =>
+          log.warn(s"Received this action $action but is was not legal, message is: $message.")
+        )
+
+      /** First adding actions from entities */
+      val (nextCollector, oldestTimeToRemove, idsToRemove) =
+        info.actionGatherer.masterAddAndRemoveActions(sortedActions)
+
+      /** Making all the server specific checks */
+      val (finalCollector, output) = serverAction(nextCollector, () => System.currentTimeMillis)
+
+      /** Sending outcome back to entities. */
+      val finalOutput = ServerAction.ServerActionOutput(
+        sortedActions,
+        oldestTimeToRemove,
+        idsToRemove
+      ) merge output
+      if finalOutput.createdActions.nonEmpty then
+        info.broadcast(
+          ServerToClient.AddAndRemoveActions(
+            finalOutput.createdActions,
+            finalOutput.oldestTimeToRemove,
+            finalOutput.idsOfIdsToRemove
+          )
+        )
+
+      /** Set up for next loop. */
+      val timeSpent = now - startTime
+      if timeSpent > gameLoopTiming then log.warn(s"Game loop took $timeSpent millis.")
+
+      (info.afterGameLoop(finalCollector), timeSpent)
+    }
+  } yield (newInfo, theTimeSpent)).flatMap((newInfo, theTimeSpent) =>
+    zio.clock.sleep(zio.duration.Duration.fromScala((0L max (gameLoopTiming - theTimeSpent)).millis)) *> gameLoop(
+      newInfo
+    ).unless(newInfo.ended)
+  )
+
 }
