@@ -22,13 +22,15 @@ import utils.misc.RGBColour
 import typings.pixiJs.PIXI.SCALE_MODES
 import game.ui.gui.reactivecomponents.*
 import game.ui.gui.reactivecomponents.gridcontainer.GridContainer
+import gamecommunication.ServerToClient.BeginIn
 
 final class ReactiveGUIDrawer(
     playerId: Entity.Id,
     stage: ReactiveStage,
     resources: PartialFunction[Asset, LoaderResource],
     useAbilityWriter: Observer[Ability.AbilityId],
-    gameStateUpdates: EventStream[(GameState, Long)]
+    gameStateUpdates: EventStream[(GameState, Long)],
+    beginInEvents: EventStream[BeginIn]
 ) {
   val linearMode = 1.0
 
@@ -50,6 +52,18 @@ final class ReactiveGUIDrawer(
   stage(guiContainer)
 
   guiContainer.amend(new ClockDisplay(slowGameStateUpdates, Val(10 + 10 * i)))
+  guiContainer.amend(
+    new FPSDisplay(gameStateUpdates).amend(
+      y <-- stage.resizeEvents.map(_._2 - 50)
+    )
+  )
+  guiContainer.amend(
+    new BeginCountdownDisplay(
+      beginInEvents,
+      gameStateUpdates.map(_._2),
+      stage.resizeEvents.map((width, height) => Complex(width / 2, height / 2 - 100))
+    )
+  )
 
   val abilityButtonContainer: ReactiveContainer = new GridContainer(
     GridContainer.Column,

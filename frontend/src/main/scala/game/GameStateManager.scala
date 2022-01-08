@@ -116,7 +116,14 @@ final class GameStateManager(
     setUnconfirmedActions = unconfirmedActions = _
   )
 
-  val guiDrawer = new ReactiveGUIDrawer(playerId, reactiveStage, resources, useAbilityBus.writer, gameStateUpdates)
+  val guiDrawer = new ReactiveGUIDrawer(
+    playerId,
+    reactiveStage,
+    resources,
+    useAbilityBus.writer,
+    gameStateUpdates,
+    beginInEvents
+  )
 
   val effectsManager = new EffectsManager(playerId, $actionsWithStates, gameDrawer.camera, application, resources)
 
