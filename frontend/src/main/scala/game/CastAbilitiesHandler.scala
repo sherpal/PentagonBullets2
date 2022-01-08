@@ -145,8 +145,16 @@ final class CastAbilitiesHandler(
   private val abilityMakerFromAbilityId: Map[Ability.AbilityId, (GameState, Complex, Player) => Option[Ability]] =
     allAbilityMakers.map(maker => maker.abilityId -> maker.fn).toMap
 
+  userControls.downInputs.foreach(println)
+
   EventStream
     .merge(
+      userControls.downInputs
+        .collect { case UserInput.ShieldAbility => Ability.activateShieldId }
+        .withCurrentValueOf($gameStates)
+        .map((abilityId, gameState) => (abilityId, gameState, gameState.playerById(playerId)))
+        .collect { case (abilityId, gameState, Some(me)) => (gameState, abilityId, me) }
+        .withCurrentValueOf($gameMousePosition),
       userControls.downInputs
         .collect { case abilityInput: UserInput.AbilityInput => abilityInput }
         .withCurrentValueOf($gameStates)
@@ -156,15 +164,15 @@ final class CastAbilitiesHandler(
         .map { case (abilityInput, gameState, me, worldMousePos) =>
           (gameState, abilityInput.abilityId(me), worldMousePos, me)
         }
-        .collect { case (gameState, Some(abilityId), worldMousePos, me) => (gameState, abilityId, worldMousePos, me) },
+        .collect { case (gameState, Some(abilityId), worldMousePos, me) => (gameState, abilityId, me, worldMousePos) },
       useAbilityEvents
         .withCurrentValueOf($gameStates)
-        .map((abilityId, gameState) => (abilityId, gameState, gameState.players.get(playerId)))
+        .map((abilityId, gameState) => (abilityId, gameState, gameState.playerById(playerId)))
         .collect { case (abilityId, gameState, Some(me)) => (gameState, abilityId, me) }
         .withCurrentValueOf($gameMousePosition)
     )
     .filter(_._1.isPlaying)
-    .foreach { case (gameState: GameState, abilityId: Ability.AbilityId, worldMousePos: Complex, me: Player) =>
+    .foreach { case (gameState: GameState, abilityId: Ability.AbilityId, me: Player, worldMousePos: Complex) =>
       val maybeAbility: Option[Ability] = abilityMakerFromAbilityId.get(abilityId) match {
         case Some(fn) => fn(gameState, worldMousePos, me)
         case None     => throw new RuntimeException(s"This ability Id ($abilityId) is not supported yet.")

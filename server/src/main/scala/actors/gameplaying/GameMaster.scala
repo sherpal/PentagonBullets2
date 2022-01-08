@@ -10,6 +10,7 @@ import gamelogic.utils.IdGeneratorContainer
 import models.menus.PlayerName
 import gamelogic.utils.Time
 import zio.{UIO, ZIO}
+
 import scala.util.{Failure, Success}
 import zio.duration.Duration.fromScala
 import gamelogic.entities.concreteentities.GameArea
@@ -17,7 +18,7 @@ import gamelogic.gamestate.serveractions.*
 
 import scala.concurrent.duration.*
 import gamelogic.gamestate.{ActionGatherer, GreedyActionGatherer}
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.time.LocalDateTime
 import scala.concurrent.ExecutionContext
@@ -26,6 +27,8 @@ import scala.language.implicitConversions
 /** The [[GameMaster]] actually runs the game loop and manages the game state.
   */
 object GameMaster {
+
+  private val globalLogger = LoggerFactory.getLogger(getClass)
 
   private def now = System.currentTimeMillis
 
@@ -151,10 +154,10 @@ object GameMaster {
           info.addCancelRunner(() =>
             runner.cancel().onComplete {
               case Failure(exception) =>
-                context.log.info("Error while cancelling runner, this is bad")
+                globalLogger.info("Error while cancelling runner, this is bad")
                 exception.printStackTrace()
               case Success(_) =>
-                context.log.info("Error cancelled.")
+                globalLogger.info("Error cancelled.")
             }
           )
         )

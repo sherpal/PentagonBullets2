@@ -88,7 +88,7 @@ final class GameDrawer(
   def drawGameState(gameState: GameState, cameraPosition: Complex, currentTime: Long): Unit = {
     camera.worldCenter = cameraPosition
 
-    val playerColours = gameState.players.map((id, player) => (id, player.colour))
+    val playerColours = (gameState.players ++ gameState.deadPlayers).map((id, player) => (id, player.colour))
 
     val teamColours = (gameState.players ++ gameState.deadPlayers).values
       .groupBy(_.team)

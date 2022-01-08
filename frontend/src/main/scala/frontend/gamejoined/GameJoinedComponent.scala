@@ -117,7 +117,8 @@ object GameJoinedComponent {
         div(info.toString, br(), gameKey.toString)
       },
       gameStartsEvents
-        .map(gameStartsInfo => GameStarted(gameStartsInfo.playerInfo, gameStartsInfo.gameKey)) --> stateChanger
+        .map(gameStartsInfo => GameStarted(gameStartsInfo.playerInfo, gameStartsInfo.gameKey)) --> stateChanger,
+      details(h2("Game controls (click to expand)"), ControlsEditorComponent())
     )
   }
 

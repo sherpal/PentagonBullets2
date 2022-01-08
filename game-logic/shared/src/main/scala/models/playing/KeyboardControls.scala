@@ -45,6 +45,6 @@ object KeyboardControls {
     )
   )
 
-  val storageKey = "controls"
+  val storageKey = "pentagonBulletsControls"
 
 }

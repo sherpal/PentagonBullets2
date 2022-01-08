@@ -32,7 +32,7 @@ object UserInput {
     def direction: Complex = -1
   }
 
-  case object NextTarget extends UserInput
+  case object ShieldAbility extends UserInput
 
   /** Represent */
   case class AbilityInput(abilityIndex: Int) extends UserInput {

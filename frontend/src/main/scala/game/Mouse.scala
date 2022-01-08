@@ -45,6 +45,12 @@ final class Mouse(canvas: html.Canvas, controls: Controls) {
   canvas.addEventListener("mouseup", mouseUpHandler)
   canvas.addEventListener("mousedown", mouseDownHandler)
 
+  val mouseDownEvents: EventStream[MouseEvent] = mouseDownEventBus.events
+  val mouseUpEvents: EventStream[MouseEvent]   = mouseUpEventBus.events
+
+  val leftClickDownEvents: EventStream[Unit] = mouseDownEvents.filter(_.button == 0).mapTo(())
+  val leftClickUpEvents: EventStream[Unit]   = mouseUpEvents.filter(_.button == 0).mapTo(())
+
   val downUserInputEvents: EventStream[UserInput] = mouseDownEventBus.events
     .map(_.button.toInt)
     .map(Controls.MouseCode.apply)

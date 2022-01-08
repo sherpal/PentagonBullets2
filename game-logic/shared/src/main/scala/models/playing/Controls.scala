@@ -12,20 +12,22 @@ final case class Controls(
     downKey: InputCode,
     leftKey: InputCode,
     rightKey: InputCode,
-    nextTargetKey: InputCode,
+    chosenAbilityKey: InputCode,
+    shieldAbilityKey: InputCode,
     abilityKeys: List[InputCode]
 ) {
 
   lazy val controlMap: Map[InputCode, UserInput] = Map(
-    upKey         -> UserInput.Up,
-    downKey       -> UserInput.Down,
-    leftKey       -> UserInput.Left,
-    rightKey      -> UserInput.Right,
-    nextTargetKey -> UserInput.NextTarget
+    upKey            -> UserInput.Up,
+    downKey          -> UserInput.Down,
+    leftKey          -> UserInput.Left,
+    rightKey         -> UserInput.Right,
+    shieldAbilityKey -> UserInput.ShieldAbility,
+    chosenAbilityKey -> UserInput.AbilityInput(0)
   ) ++ abilityKeys.zipWithIndex.map { case (code, idx) => code -> UserInput.AbilityInput(idx) }.toMap
 
   def allKeysInMultiple: List[InputCode] =
-    (List(upKey, downKey, rightKey, leftKey, nextTargetKey) ++ abilityKeys)
+    (List(upKey, downKey, rightKey, leftKey, shieldAbilityKey, chosenAbilityKey) ++ abilityKeys)
       .groupBy(identity)
       .filter(_._2.length > 1)
       .keys
@@ -84,7 +86,8 @@ object Controls {
       KeyCode("KeyS"),
       KeyCode("KeyA"),
       KeyCode("KeyD"),
-      KeyCode("Tab"),
+      MouseCode(2),
+      KeyCode("KeyE"),
       (1 to 10).map(_ % 10).map("Digit" + _).map(KeyCode.apply).toList
     )
   )
