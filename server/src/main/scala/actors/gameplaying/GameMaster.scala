@@ -12,11 +12,12 @@ import gamelogic.utils.Time
 import zio.ZIO
 import zio.duration.Duration.fromScala
 import gamelogic.entities.concreteentities.GameArea
-import gamelogic.gamestate.serveractions._
+import gamelogic.gamestate.serveractions.*
 
 import scala.concurrent.duration.*
 import gamelogic.gamestate.{ActionGatherer, GreedyActionGatherer}
 
+import java.time.LocalDateTime
 import scala.language.implicitConversions
 
 /** The [[GameMaster]] actually runs the game loop and manages the game state.
@@ -34,6 +35,8 @@ object GameMaster {
   private case object GameLoop extends Command
 
   private case class InternalActions(gameActions: List[GameAction]) extends Command
+
+  private case object Heartbeat extends Command
 
   case class PlayerDisconnected(playerName: PlayerName) extends Command
 
@@ -53,9 +56,9 @@ object GameMaster {
       ManageUsedAbilities ++
       ManageGunTurrets ++
       ManageBullets ++
-      ((ManageHealUnits parWith ManageDamageZones) parWith
-        (ManageBarriers parWith ManageMists)) ++
-      ManageAbilityGivers ++ (ManageSmashBullets parWith ManageHealingZones) ++ ManageBuffsToBeRemoved ++
+      ManageHealUnits ++ ManageDamageZones ++
+      ManageBarriers ++ ManageMists ++
+      ManageAbilityGivers ++ ManageSmashBullets ++ ManageHealingZones ++ ManageBuffsToBeRemoved ++
       ManageEndOfGame
 
   private implicit def wrapServerToClient(serverToClient: ServerToClient): ConnectionActor.ServerToClientWrapper =
@@ -89,6 +92,7 @@ object GameMaster {
     Behaviors.receiveMessage {
       case GameLoop =>
         context.log.info("Game about to begin")
+        context.scheduleOnce(1.second, context.self, Heartbeat)
         context.self ! InternalActions(List(GameBegins(GameAction.newId(), now, gameArea.gameBounds, ServerSource)))
         context.self ! GameLoop
         gameRunningReceiver(GameRunningInfo(actionGatherer, Nil, idGeneratorContainer, players))
@@ -214,8 +218,11 @@ object GameMaster {
           context.log.warn(
             s"I received these actions but there were too old (time < $oldestTimeAllowed):\n${tooOld.mkString("\n")}"
           )
-        // todo: some legality checks
         gameRunningReceiver(info.addPendingActions(toKeep))
+      case Heartbeat =>
+        context.log.info(s"Heartbeat message. (${LocalDateTime.now()})")
+        context.scheduleOnce(1.second, context.self, Heartbeat)
+        Behaviors.same
       case PlayerDisconnected(playerName) =>
         val newInfo = info.playerDisconnected(playerName)
         if newInfo.players.isEmpty then Behaviors.stopped(() => context.log.info("Everyone is gone"))

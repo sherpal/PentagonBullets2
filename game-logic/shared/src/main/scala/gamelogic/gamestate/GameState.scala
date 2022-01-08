@@ -130,6 +130,7 @@ final class GameState(
   @inline def barriers: Map[Entity.Id, Barrier]             = allTEntities[Barrier]
   @inline def bullets: Map[Entity.Id, Bullet]               = allTEntities[Bullet]
   @inline def damageZones: Map[Entity.Id, DamageZone]       = allTEntities[DamageZone]
+  @inline def gunTurrets: Map[Entity.Id, GunTurret]         = allTEntities[GunTurret]
   @inline def healUnits: Map[Entity.Id, HealUnit]           = allTEntities[HealUnit]
   @inline def healingZones: Map[Entity.Id, HealingZone]     = allTEntities[HealingZone]
   @inline def laserLaunchers: Map[Entity.Id, LaserLauncher] = allTEntities[LaserLauncher]

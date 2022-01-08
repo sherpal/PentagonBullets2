@@ -108,6 +108,8 @@ trait Polygon extends Shape {
 
   override def toString: String = vertices.mkString("Polygon(", ", ", ")")
 
+  def translateBy(z: Complex): Polygon = Polygon(vertices.map(z + _))
+
   def randomPointIn(gen: ((Double, Double), (Double, Double)) => Complex): Complex =
     if radius <= 0 then 0
     else LazyList.from(0).map(_ => gen((-radius, radius), (-radius, radius))).filter(contains).head

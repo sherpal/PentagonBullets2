@@ -1,7 +1,7 @@
 package gamelogic.abilities
 
 import be.doeraene.physics.Complex
-import gamelogic.entities.Entity
+import gamelogic.entities.{Body, Entity, WithAbilities}
 import gamelogic.entities.concreteentities.{GunTurret, LaserLauncher, Player}
 import gamelogic.entities.ActionSource.AbilitySource
 import gamelogic.gamestate.gameactions.*
@@ -23,6 +23,16 @@ final case class LaserAbility(
 
   val innerCooldown: Vector[Long] = Vector(1000, 8000)
 
+  def laserShape(caster: WithAbilities & Body, laserLauncher: LaserLauncher): Polygon = {
+    val casterPos: Complex = caster.currentPosition(time)
+
+    val directionPos     = laserLauncher.pos - casterPos
+    val unitVec          = directionPos / directionPos.modulus
+    val perpendicularVec = Player.radius * unitVec.orthogonal
+    val laserVertices    = Vector(casterPos, laserLauncher.pos - perpendicularVec, laserLauncher.pos + perpendicularVec)
+    Polygon(laserVertices, convex = true)
+  }
+
   def createActions(
       gameState: GameState
   )(using IdGeneratorContainer): List[GameAction] =
@@ -34,31 +44,20 @@ final case class LaserAbility(
         gameState.laserLaunchers.values.find(_.ownerId == casterId)
       ) match {
         case (Some(caster), Some(laserLauncher)) =>
-          val casterPos: Complex = caster.currentPosition(time)
-
-          val directionPos     = laserLauncher.pos - casterPos
-          val unitVec          = directionPos / directionPos.modulus
-          val perpendicularVec = Player.radius * Complex(-unitVec.im, unitVec.re)
-
-          val laserVertices =
-            Vector(casterPos, laserLauncher.pos - perpendicularVec, laserLauncher.pos + perpendicularVec)
-
-          val laserShape = Polygon(laserVertices, convex = true)
+          val theLaserShape = laserShape(caster, laserLauncher)
 
           DestroyLaserLauncher(GameAction.newId(), time, laserLauncher.id, AbilitySource) +:
-            FireLaser(GameAction.newId(), time, casterId, laserVertices, AbilitySource) +:
-            (gameState
-              .allTEntities[GunTurret]
-              .values
+            FireLaser(GameAction.newId(), time, casterId, theLaserShape, AbilitySource) +:
+            (gameState.gunTurrets.values
               .filterNot(_.teamId == teamId)
-              .filter(turret => turret.shape.collides(turret.pos, 0, laserShape, 0, 0))
+              .filter(turret => turret.shape.collides(turret.pos, 0, theLaserShape, 0, 0))
               .map(turret =>
                 GunTurretTakesDamage(GameAction.newId(), time, turret.id, LaserAbility.damage, AbilitySource)
               ) ++
               gameState.players.values
                 .filterNot(_.team == teamId)
                 .filter(player =>
-                  player.shape.collides(player.currentPosition(time), player.rotation, laserShape, 0, 0)
+                  player.shape.collides(player.currentPosition(time), player.rotation, theLaserShape, 0, 0)
                 )
                 .map(player =>
                   PlayerTakeDamage(GameAction.newId(), time, player.id, casterId, LaserAbility.damage, AbilitySource)

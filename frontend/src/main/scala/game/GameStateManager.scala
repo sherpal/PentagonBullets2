@@ -9,6 +9,7 @@ import gamecommunication.ServerToClient.{AddAndRemoveActions, BeginIn}
 import be.doeraene.physics.Complex
 import assets.Asset
 import game.ui.GameDrawer
+import game.ui.effects.EffectsManager
 import game.ui.gui.ReactiveGUIDrawer
 import gamecommunication.{gameActionIdPickler, ClientToServer}
 import gamelogic.utils.Time
@@ -116,6 +117,8 @@ final class GameStateManager(
   )
 
   val guiDrawer = new ReactiveGUIDrawer(playerId, reactiveStage, resources, useAbilityBus.writer, gameStateUpdates)
+
+  val effectsManager = new EffectsManager(playerId, $actionsWithStates, gameDrawer.camera, application, resources)
 
   private var lastTimeStamp = org.scalajs.dom.window.performance.now()
 
@@ -226,6 +229,8 @@ final class GameStateManager(
       gameStateToDraw.entityByIdAs[Player](playerId).fold(Complex.zero)(_.currentPosition(now)),
       now
     )
+
+    effectsManager.update(now, gameStateToDraw)
 
     gameStateUpdatesBus.writer.onNext((gameStateToDraw, now))
   }

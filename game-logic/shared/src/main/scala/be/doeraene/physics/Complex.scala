@@ -50,11 +50,13 @@ final case class Complex(re: Double, im: Double) {
 
   @inline def conjugate: Complex = Complex(re, -im)
 
-  /**
-    * Returns the unique complex such that
-    * - this scalaProduct that == 0,
-    * - this crossProduct that > 0, and
-    * - |this| == |that|
+  @inline def realProjection: Complex = Complex(re, 0)
+  @inline def imagProjection: Complex = Complex(0, im)
+
+  /** Returns the unique complex such that
+    *   - this scalaProduct that == 0,
+    *   - this crossProduct that > 0, and
+    *   - |this| == |that|
     */
   def orthogonal: Complex = Complex(-im, re)
 
@@ -167,8 +169,7 @@ object Complex {
     def i: Complex = x * Complex.i
   }
 
-  /**
-    * Compares z1 and z2 by first looking at their modulus, then looking at their argument.
+  /** Compares z1 and z2 by first looking at their modulus, then looking at their argument.
     */
   def polarOrder(z1: Complex, z2: Complex): Int = (z1.modulus compare z2.modulus, z1.arg compare z2.arg) match {
     case (0, x) => x
