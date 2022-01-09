@@ -2,6 +2,7 @@ package models.menus
 
 import gamelogic.abilities.Ability
 import gamelogic.abilities.Ability.*
+import gamelogic.entities.concreteentities.HealingZone
 
 final case class AbilityInfo(id: Ability.AbilityId, name: String, description: String)
 
@@ -24,7 +25,13 @@ object AbilityInfo {
       "Place a barrier at your mouse's position. This barrier acts as an obstacle for all your opponents."
     ),
     AbilityInfo(createBulletAmplifierId, "Bullet Amplifier", "Don't use it. It sucks."),
-    AbilityInfo(createHealingZoneId, "Healing Zone", "todo"),
+    AbilityInfo(
+      createHealingZoneId,
+      "Healing Zone",
+      s"Place a healing zone at your mouse's position. This healing zone heals you (or any member of your team) " +
+        s"periodically (every ${HealingZone.tickRate} ms), for a maximum total of ${HealingZone.lifeSupply} life " +
+        s"points. The healing zone vanishes after ${HealingZone.lifetime} seconds if it was not consumed by then."
+    ),
     AbilityInfo(
       laserId,
       "Laser",
