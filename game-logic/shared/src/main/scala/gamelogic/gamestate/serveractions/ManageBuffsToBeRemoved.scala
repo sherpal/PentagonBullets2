@@ -14,6 +14,8 @@ object ManageBuffsToBeRemoved extends ServerActionFromActionList {
   def createActionList(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): Iterable[GameAction] = {
+    println(getClass)
+
     val startTime = nowGenerator()
     val gameState = currentState.currentGameState
 

@@ -14,8 +14,12 @@ final class GreedyActionGatherer(val currentGameState: GameState) extends Action
   def masterAddAndRemoveActions(actionsToAdd: List[GameAction]): (GreedyActionGatherer, Long, List[GameAction.Id]) = {
     val (newGameState, idsToRemove) = actionsToAdd.foldLeft((currentGameState, List.empty[GameAction.Id])) {
       case ((gameState, idsToRemove), action) =>
-        if (shouldKeepAction(action, gameState)) (action(gameState), idsToRemove)
-        else (gameState, action.actionId +: idsToRemove)
+        println(s"adding action $action")
+        val result =
+          if (shouldKeepAction(action, gameState)) (action(gameState), idsToRemove)
+          else (gameState, action.actionId +: idsToRemove)
+        println("added")
+        result
     }
 
     (new GreedyActionGatherer(newGameState), 0L, idsToRemove)

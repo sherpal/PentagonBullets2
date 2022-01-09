@@ -12,6 +12,8 @@ object ManageGunTurrets extends ServerAction {
   def apply(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): (ActionGatherer, ServerAction.ServerActionOutput) = {
+    println(getClass)
+
     val now             = nowGenerator()
     val gameState       = currentState.currentGameState
     val teamsByPlayerId = gameState.teamsByPlayerId

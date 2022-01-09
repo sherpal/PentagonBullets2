@@ -9,6 +9,8 @@ object ManageEndOfGame extends ServerActionFromActionList {
   def createActionList(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): Iterable[GameAction] = {
+    println(getClass)
+
     val time      = nowGenerator()
     val gameState = currentState.currentGameState
     val teamsLeft = gameState.players.values.map(_.team).toList.distinct.size

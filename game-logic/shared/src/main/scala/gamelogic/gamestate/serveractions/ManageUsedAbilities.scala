@@ -13,6 +13,8 @@ object ManageUsedAbilities extends ServerAction {
   )(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): (ActionGatherer, ServerAction.ServerActionOutput) = {
+    println(getClass)
+
     val startTime = nowGenerator()
     val gameState = currentState.currentGameState
 

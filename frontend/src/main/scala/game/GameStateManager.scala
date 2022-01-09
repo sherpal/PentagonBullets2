@@ -49,7 +49,7 @@ final class GameStateManager(
 
   var maybeLastPositionUpdate: Option[UpdatePlayerPos] = Option.empty
 
-  setInterval(100.millis) {
+  setInterval(33.millis) {
     maybeLastPositionUpdate.foreach { action =>
       socketOutWriter.onNext(ClientToServer.GameActionWrapper(List(action)))
     }

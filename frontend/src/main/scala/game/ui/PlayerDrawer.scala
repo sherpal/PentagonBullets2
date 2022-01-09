@@ -97,7 +97,7 @@ trait PlayerDrawer extends Drawer {
 
           pair
       }
-      val playerPosition = player.pos
+      val playerPosition = player.currentPosition(time)
       val rot            = (Player.radius - 2) * Complex.rotation(player.rotation)
       camera.viewportManager(polygon, playerPosition, player.shape.boundingBox)
       polygon.rotation = -player.rotation
