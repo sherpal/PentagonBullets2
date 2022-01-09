@@ -43,8 +43,6 @@ object GameMaster {
 
   private case class InternalActions(gameActions: List[GameAction]) extends Command
 
-  private case object Heartbeat extends Command
-
   case class PlayerDisconnected(playerName: PlayerName) extends Command
 
   /** Actions were sent by the external world. */
@@ -94,7 +92,6 @@ object GameMaster {
         context.log.info("Game about to begin")
         val queue    = zio.Runtime.default.unsafeRun(zio.Queue.unbounded[GameAction])
         val offerAll = (gameActions: Iterable[GameAction]) => zio.Runtime.default.unsafeRun(queue.offerAll(gameActions))
-        context.scheduleOnce(1.second, context.self, Heartbeat)
         context.self ! InternalActions(List(GameBegins(GameAction.newId(), now, gameArea.gameBounds, ServerSource)))
         context.self ! GameLoop
         gameRunningReceiver(
@@ -172,10 +169,6 @@ object GameMaster {
             s"I received these actions but there were too old (time < $oldestTimeAllowed):\n${tooOld.mkString("\n")}"
           )
         gameRunningReceiver(info.addPendingActions(toKeep))
-      case Heartbeat =>
-        context.log.info(s"Heartbeat message. (${LocalDateTime.now()})")
-        context.scheduleOnce(1.second, context.self, Heartbeat)
-        Behaviors.same
       case PlayerDisconnected(playerName) =>
         val newInfo = info.playerDisconnected(playerName)
         if newInfo.players.isEmpty then

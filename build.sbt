@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
+import scala.sys.process.Process
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
@@ -45,6 +46,10 @@ lazy val `server` = project
   .in(file("./server"))
   .settings(commonSettings)
   .settings(BackendDependencies.addDependencies())
+  .settings(
+    mainClass in assembly := Some("server.Server"),
+    test in assembly := {}
+  )
   .dependsOn(`game-logic`.jvm)
 
 lazy val cypress = project
@@ -99,4 +104,28 @@ compileCypress := {
   )
 
   println("[info] Done.")
+}
+
+lazy val snowpackBuild = taskKey[Unit]("Build frontend using snowpack")
+
+snowpackBuild := {
+  val installResult = Process("npm" :: "install" :: Nil, baseDirectory.value / "frontend").!
+  if (installResult != 0) {
+    throw new RuntimeException("Failure when installing packages.")
+  }
+  val buildResult = Process("npx" :: "snowpack" :: "build" :: Nil, baseDirectory.value / "frontend").!
+  if (buildResult != 0) {
+    throw new RuntimeException("Failure when building snowpack")
+  }
+}
+
+snowpackBuild := (snowpackBuild dependsOn (frontend / Compile / fastLinkJS)).value
+
+(server / Compile / assembly) := ((server / Compile / assembly) dependsOn snowpackBuild).value
+
+lazy val buildApplication =
+  taskKey[java.io.File]("Builds the workers, the frontend, packages with snowpack and call sbt assembly on the server.")
+
+buildApplication := {
+  (server / Compile / assembly).value
 }

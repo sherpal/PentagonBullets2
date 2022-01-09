@@ -54,6 +54,7 @@ object ManageGunTurrets extends ServerAction {
               turret.id,
               rotation,
               Entity.newId(),
+              turret.teamId,
               Bullet.defaultRadius,
               Bullet.speed,
               ServerSource

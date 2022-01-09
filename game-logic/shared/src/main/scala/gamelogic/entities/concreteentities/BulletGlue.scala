@@ -2,9 +2,10 @@ package gamelogic.entities.concreteentities
 
 import gamelogic.buffs.Buff.ResourceIdentifier
 import gamelogic.buffs.{Buff, SimplePassiveBuff}
+import gamelogic.entities.ActionSource.AbilitySource
 import gamelogic.entities.Entity
 import gamelogic.gamestate.{GameAction, GameState}
-import gamelogic.gamestate.gameactions.NewBullet
+import gamelogic.gamestate.gameactions.{GunTurretShoots, NewBullet}
 import gamelogic.utils.IdGeneratorContainer
 
 final case class BulletGlue(buffId: Buff.Id, appearanceTime: Long, bearerId: Entity.Id, teamId: Int)
@@ -17,32 +18,31 @@ final case class BulletGlue(buffId: Buff.Id, appearanceTime: Long, bearerId: Ent
   def actionTransformer(action: GameAction): List[GameAction] = action match {
     case bullet: NewBullet if bullet.teamId != teamId =>
       List(bullet.copy(speed = bullet.speed / 2))
+    case gunTurretShoots: GunTurretShoots if gunTurretShoots.teamId != teamId =>
+      List(gunTurretShoots.copy(bulletSpeed = gunTurretShoots.bulletSpeed / 2))
     case _ =>
       List(action)
   }
 
-  def start(gameState: GameState): GameState =
-    gameState
-      .allTEntities[Bullet]
-      .values
+  def start(gameState: GameState)(implicit idGeneratorContainer: IdGeneratorContainer): Iterable[GameAction] =
+    gameState.bullets.values
       .filter(_.teamId != teamId)
-      .foldLeft(gameState) { case (gs, bullet) =>
-        val newPos = bullet.currentPosition(appearanceTime - bullet.time)
-        gs.withEntity[Bullet](
+      .map { bullet =>
+        val newPos         = bullet.currentPosition(appearanceTime)
+        val travelledSoFar = bullet.currentTravelledDistance(appearanceTime)
+
+        NewBullet(
+          GameAction.newId(),
           bullet.id,
+          bullet.ownerId,
+          bullet.teamId,
+          newPos,
+          bullet.radius,
+          bullet.direction,
+          (bullet.speed / 2).toInt,
           appearanceTime,
-          Bullet(
-            bullet.id,
-            appearanceTime,
-            bullet.ownerId,
-            bullet.teamId,
-            newPos.re,
-            newPos.im,
-            bullet.radius,
-            bullet.direction,
-            bullet.speed / 2,
-            bullet.currentTravelledDistance(appearanceTime)
-          )
+          travelledSoFar,
+          AbilitySource
         )
       }
 

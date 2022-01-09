@@ -21,6 +21,7 @@ object ManageBuffsToBeRemoved extends ServerActionFromActionList {
       .filter(_.isFinite)
       .filter(buff => startTime - buff.appearanceTime > buff.duration)
       .flatMap { buff =>
+        println(s"buff is removed! $buff")
         removeBuffAction(idGeneratorContainer.gameActionIdGenerator(), buff) :: buff.endingAction(gameState, startTime)
       }
 

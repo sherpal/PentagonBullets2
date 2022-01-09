@@ -19,6 +19,8 @@ object Server {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "PentagonBullet")
     given ExecutionContextExecutor            = system.executionContext
 
+    println(system.settings.config)
+
     val (port, host, prodMode) = runtime.unsafeRun(for {
       p    <- ConfigReader.portM
       h    <- ConfigReader.hostM

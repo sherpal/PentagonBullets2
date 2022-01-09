@@ -87,11 +87,7 @@ final class GameState(
     * because it should be in the contract of changer that they should not violate commutativity. Nonetheless, this is
     * something to keep in mind for the future. Perhaps a passive buff could also have a priority.
     */
-  def applyActionChangers(action: GameAction): List[GameAction] =
-    passiveBuffs.valuesIterator
-      .flatMap(_.valuesIterator)
-      .map(buff => buff.actionTransformer(_))
-      .foldLeft(List(action))(_.flatMap(_))
+  def applyActionChangers(action: GameAction): List[GameAction] = applyActionChangers(List(action))
 
   /** See other overloaded methods. */
   def applyActionChangers(actions: List[GameAction]): List[GameAction] = {

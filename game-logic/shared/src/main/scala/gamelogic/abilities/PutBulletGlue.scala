@@ -23,8 +23,11 @@ final case class PutBulletGlue(time: Long, useId: Ability.UseId, casterId: Entit
 
   def createActions(
       gameState: GameState
-  )(using IdGeneratorContainer): List[GameAction] = List(
-    PutSimplePassiveBuff(GameAction.newId(), time, BulletGlue(Buff.nextBuffId(), time, casterId, teamId), AbilitySource)
-  )
+  )(using IdGeneratorContainer): List[GameAction] = {
+    val bulletGlueBuff = BulletGlue(Buff.nextBuffId(), time, casterId, teamId)
+    List(
+      PutSimplePassiveBuff(GameAction.newId(), time, bulletGlueBuff, AbilitySource)
+    ) ++ bulletGlueBuff.start(gameState)
+  }
 
 }

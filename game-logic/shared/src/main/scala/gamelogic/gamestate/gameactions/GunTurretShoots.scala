@@ -1,5 +1,6 @@
 package gamelogic.gamestate.gameactions
 
+import gamelogic.entities.Entity.TeamId
 import gamelogic.entities.{ActionSource, Entity}
 import gamelogic.entities.concreteentities.{Bullet, GunTurret}
 import gamelogic.gamestate.statetransformers.{GameStateTransformer, TransformEntity, WithEntity}
@@ -11,6 +12,7 @@ final case class GunTurretShoots(
     turretId: Entity.Id,
     rotation: Double,
     bulletId: Entity.Id,
+    teamId: TeamId,
     bulletRadius: Int,
     bulletSpeed: Double,
     actionSource: ActionSource
