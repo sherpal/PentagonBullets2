@@ -29,7 +29,7 @@ final case class Player(
     energy: Double,
     colour: RGBColour
 ) extends MovingBody
-    with Living
+    with LivingEntity
     with WithAbilities {
 
   def maxLife: Double = 100
@@ -64,6 +64,8 @@ final case class Player(
 
   def addAllowedAbility(abilityId: Ability.AbilityId): Player =
     copy(allowedAbilities = allowedAbilities :+ abilityId)
+
+  protected def patchLifeTotal(newLife: Double): Player = copy(lifeTotal = newLife)
 }
 
 object Player {

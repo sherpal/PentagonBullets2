@@ -16,7 +16,7 @@ final case class GunTurret(
     rotation: Double,
     lifeTotal: Double
 ) extends Body
-    with Living {
+    with LivingEntity {
 
   def takesDamage(amount: Double): GunTurret = copy(lifeTotal = lifeTotal - amount)
 
@@ -28,6 +28,10 @@ final case class GunTurret(
   def time: Long = creationTime
 
   val shape: Circle = Circle(radius)
+
+  def maxLife: Double = GunTurret.maxLifeTotal
+
+  protected def patchLifeTotal(newLife: Double): GunTurret = copy(lifeTotal = newLife)
 
 }
 

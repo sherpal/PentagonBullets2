@@ -60,6 +60,17 @@ final class EffectsManager(
               camera
             )
           )
+        case PlayerHitByMultipleBullets(actionId, time, bulletIds, entityId, totalDamage, actionSource)
+            if playerId == entityId =>
+          Some(
+            new SimpleTextEffect(
+              totalDamage.toInt.toString,
+              RGBColour.red,
+              time,
+              Path.goDown(2000, 40).jitter(math.Pi / 16) + gameState.players.get(playerId).fold(Complex.zero)(_.pos),
+              camera
+            )
+          )
         case PlayerTakeHealUnit(_, time, entityId, _, _) if entityId == playerId =>
           Some(
             new SimpleTextEffect(
@@ -90,6 +101,26 @@ final class EffectsManager(
                 polygonTexture(caster.colour.intColour, 0.9, shape)
               )
             }
+        case NewGunTurret(actionId, time, turretId, ownerId, teamId, pos, radius, actionSource) =>
+          Some(
+            new SmallLifeBars(
+              turretId,
+              time,
+              resources(Asset.ingame.ui.bars.minimalistBar).texture,
+              resources(Asset.ingame.ui.bars.minimalistBar).texture,
+              camera
+            )
+          )
+        case NewPlayer(actionId, player, time, actionSource) =>
+          Some(
+            new SmallLifeBars(
+              player.id,
+              time,
+              resources(Asset.ingame.ui.bars.minimalistBar).texture,
+              resources(Asset.ingame.ui.bars.minimalistBar).texture,
+              camera
+            )
+          )
         case _ =>
           Option.empty[SimpleTextEffect]
       }

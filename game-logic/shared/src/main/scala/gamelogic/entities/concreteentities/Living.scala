@@ -6,4 +6,6 @@ import gamelogic.entities.Entity
   */
 trait Living extends Entity {
   val lifeTotal: Double
+
+  def maxLife: Double
 }
