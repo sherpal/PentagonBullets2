@@ -7,6 +7,7 @@ import org.scalajs.dom.{html, CanvasRenderingContext2D}
 import typings.pixiJs.PIXI.Texture
 import utils.domutils.ScalablyTypedScalaJSDomInterop.given
 import utils.misc.RGBColour
+import typings.pixiJs.mod.Sprite
 
 object BarrierTextureMaker extends TextureMaker {
 
@@ -54,7 +55,7 @@ object BarrierTextureMaker extends TextureMaker {
       ctx.fillStyle = "rgb(255,255,255)"
       ctx.fillRect(shadingWidth, shadingWidth, Barrier.width, Barrier.length)
 
-      val tex = typings.pixiJs.global.PIXI.Texture.from(canvas2d, (), true: Boolean)
+      val tex = Sprite.from(canvas2d).texture
 
       textures += color -> tex
 
