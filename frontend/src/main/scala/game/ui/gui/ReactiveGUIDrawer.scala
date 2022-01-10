@@ -79,6 +79,7 @@ final class ReactiveGUIDrawer(
             useAbilityWriter,
             resources(Asset.abilityAssetMap(abilityId)).texture,
             resources(assets.Asset.ingame.abilities.abilityOverlay).texture,
+            resources(Asset.ingame.ui.abilityFocus).texture,
             gameStateUpdates,
             Val((32, 32))
           ): ReactiveContainer
