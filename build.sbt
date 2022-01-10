@@ -83,7 +83,7 @@ lazy val frontend = project
       "tailwindcss"
     ),
     externalNpm := {
-      scala.sys.process.Process("npm", baseDirectory.value).!
+      scala.sys.process.Process("npm.cmd", baseDirectory.value).!
       baseDirectory.value
     },
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
@@ -109,11 +109,11 @@ compileCypress := {
 lazy val snowpackBuild = taskKey[Unit]("Build frontend using snowpack")
 
 snowpackBuild := {
-  val installResult = Process("npm" :: "install" :: Nil, baseDirectory.value / "frontend").!
+  val installResult = Process("npm.cmd" :: "install" :: Nil, baseDirectory.value / "frontend").!
   if (installResult != 0) {
     throw new RuntimeException("Failure when installing packages.")
   }
-  val buildResult = Process("npx" :: "snowpack" :: "build" :: Nil, baseDirectory.value / "frontend").!
+  val buildResult = Process("npx.cmd" :: "snowpack" :: "build" :: Nil, baseDirectory.value / "frontend").!
   if (buildResult != 0) {
     throw new RuntimeException("Failure when building snowpack")
   }
