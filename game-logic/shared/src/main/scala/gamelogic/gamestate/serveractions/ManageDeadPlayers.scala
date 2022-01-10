@@ -8,7 +8,6 @@ object ManageDeadPlayers extends ServerAction {
   def apply(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): (ActionGatherer, ServerAction.ServerActionOutput) = {
-    println(getClass)
     val now = nowGenerator()
 
     val actions = currentState.currentGameState.players.values

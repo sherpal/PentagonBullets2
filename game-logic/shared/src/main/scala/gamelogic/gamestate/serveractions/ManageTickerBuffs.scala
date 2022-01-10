@@ -14,8 +14,6 @@ object ManageTickerBuffs extends ServerActionFromActionList {
   def createActionList(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): List[GameAction] = {
-    println(getClass)
-
     val startTime = nowGenerator()
     val gameState = currentState.currentGameState
 

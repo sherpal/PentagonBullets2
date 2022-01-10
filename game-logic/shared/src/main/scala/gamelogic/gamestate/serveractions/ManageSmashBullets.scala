@@ -9,8 +9,6 @@ object ManageSmashBullets extends ServerActionFromActionList {
   override def createActionList(currentState: ActionGatherer, nowGenerator: () => Long)(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): Iterable[GameAction] = {
-    println(getClass)
-
     val time         = nowGenerator()
     val gameState    = currentState.currentGameState
     val smashBullets = gameState.smashBullets.values

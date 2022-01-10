@@ -191,13 +191,10 @@ object GameMaster {
   private def gameLoop(info: GameRunningInfo)(implicit
       log: Logger
   ): ZIO[zio.clock.Clock, Throwable, Unit] = (for {
-    _          <- ZIO.effectTotal(println("taking actions from queue"))
     newActions <- info.actionQueue.takeAll
-    _          <- ZIO.effectTotal(println(s"there are ${newActions.length}"))
     (newInfo, theTimeSpent) <- ZIO.effect {
       implicit def idGenerator: IdGeneratorContainer = info.idGeneratorContainer
       val startTime                                  = now
-      println("sort actions and change ids")
       val sortedActions = newActions
         .map {
           case action: NewBullet =>
@@ -207,37 +204,25 @@ object GameMaster {
         .map(_.setId(GameAction.newId()))
         .sorted
 
-      println("sorted")
-
       val sortedActionsWithMaybeErrorMessages =
         sortedActions.map(action => (action, action.isLegal(info.actionGatherer.currentGameState)))
-
-      println("legality computed")
 
       val (illegalActionsWithMessage, _) = sortedActionsWithMaybeErrorMessages.partitionMap {
         case (action, Some(message)) => Left((action, message))
         case (action, None)          => Right(action)
       }
 
-      println("warning computed")
-
       illegalActionsWithMessage
         .foreach((action, message) =>
           log.warn(s"Received this action $action but is was not legal, message is: $message.")
         )
 
-      println("adding sorted actions")
-
       /** First adding actions from entities */
       val (nextCollector, oldestTimeToRemove, idsToRemove) =
         info.actionGatherer.masterAddAndRemoveActions(sortedActions)
 
-      println("server actions")
-
       /** Making all the server specific checks */
       val (finalCollector, output) = serverAction(nextCollector, () => System.currentTimeMillis)
-
-      println("server action ended")
 
       /** Sending outcome back to entities. */
       val finalOutput = ServerAction.ServerActionOutput(
@@ -246,9 +231,7 @@ object GameMaster {
         idsToRemove
       ) merge output
 
-      println("merged")
       if finalOutput.createdActions.nonEmpty then
-        println("broadcasting")
         info.broadcast(
           ServerToClient.AddAndRemoveActions(
             finalOutput.createdActions,
@@ -256,18 +239,14 @@ object GameMaster {
             finalOutput.idsOfIdsToRemove
           )
         )
-        println("ended broadcast")
-      else println("no broadcast")
 
       /** Set up for next loop. */
       val timeSpent = now - startTime
       if timeSpent > gameLoopTiming then log.warn(s"Game loop took $timeSpent millis.")
-      println("done")
       (info.afterGameLoop(finalCollector), timeSpent)
     }
   } yield (newInfo, theTimeSpent)).flatMap((newInfo, theTimeSpent) =>
-    zio.clock.sleep(zio.duration.Duration.fromScala((0L max (gameLoopTiming - theTimeSpent)).millis)) *> ZIO
-      .effectTotal(println("loop")) *> gameLoop(
+    zio.clock.sleep(zio.duration.Duration.fromScala((0L max (gameLoopTiming - theTimeSpent)).millis)) *> gameLoop(
       newInfo
     ).unless(newInfo.ended)
   )

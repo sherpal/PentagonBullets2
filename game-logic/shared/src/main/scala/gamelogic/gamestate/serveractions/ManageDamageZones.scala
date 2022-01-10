@@ -14,8 +14,6 @@ object ManageDamageZones extends ServerActionFromActionList {
   )(implicit
       idGeneratorContainer: IdGeneratorContainer
   ): Iterable[GameAction] = {
-    println(getClass)
-
     val time      = nowGenerator()
     val gameState = currentState.currentGameState
 
