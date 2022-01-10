@@ -19,18 +19,19 @@ trait BulletDrawer extends Drawer {
 
   @inline private def bulletStage = bulletContainer.ref
 
-  private val bullets: mutable.Map[Entity.Id, Sprite] = mutable.Map()
+  private val bullets: mutable.Map[Entity.Id, (Sprite, Int)] = mutable.Map()
 
   def drawBullets(state: GameState, time: Long, colors: Map[Entity.Id, RGBColour]): Unit = {
     val bs = state.allTEntities[BulletLike]
     bullets
-      .filterNot(elem => bs.isDefinedAt(elem._1))
+      .filterNot { case (id, (_, currentRadius)) => bs.get(id).exists(_.radius == currentRadius) }
       .foreach { elem =>
-        bulletStage.removeChild(elem._2)
+        bulletStage.removeChild(elem._2._1)
         bullets -= elem._1
       }
 
-    bs.foreach { case (id, bullet) =>
+    bs.foreach {
+      case (id, bullet) =>
       val newElem = bullets.get(id) match {
         case Some(elem) =>
           elem
@@ -40,10 +41,10 @@ trait BulletDrawer extends Drawer {
 
           elem.anchor.set(0.5, 0.5)
 
-          bullets += (id -> elem)
-          elem
+          bullets += (id -> (elem, bullet.radius))
+          (elem, bullet.radius)
       }
-      camera.viewportManager(newElem, bullet.currentPosition(time), bullet.shape.boundingBox)
+      camera.viewportManager(newElem._1, bullet.currentPosition(time), bullet.shape.boundingBox)
     }
   }
 
