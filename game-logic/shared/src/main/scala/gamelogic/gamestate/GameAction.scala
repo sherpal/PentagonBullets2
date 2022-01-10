@@ -71,9 +71,7 @@ object GameAction {
 
     def initial: Id = 0L
 
-    given Ordering[Id] = Ordering[Long]
-
-  implicit val gameActionPickler: Pickler[GameAction] = null
+    given Ordering[Id] = Ordering.fromLessThan(_ <= _)
 
   def newId()(using gen: IdGeneratorContainer): GameAction.Id = gen.gameActionIdGenerator.nextId()
 
