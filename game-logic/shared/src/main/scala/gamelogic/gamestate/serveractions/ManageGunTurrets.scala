@@ -43,7 +43,7 @@ object ManageGunTurrets extends ServerAction {
         gameState.players.values
           .filterNot(teamsByPlayerId(turret.ownerId).contains)
           .map(player => (player, turret.pos distanceTo player.currentPosition(now)))
-          .filter(_._2 < GunTurret.defaultReach * GunTurret.defaultReach)
+          .filter(_._2 < GunTurret.defaultReach)
           .minByOption(_._2)
           .map { (target, _) =>
             val rotation = (target.pos - turret.pos).arg
