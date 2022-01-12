@@ -27,7 +27,7 @@ final class AbilityButton(
         player  <- gameState.playerById(playerId)
         lastUse <- player.relevantUsedAbilities.values.filter(_.abilityId == abilityId).maxByOption(_.time)
         elapsedTime = currentTime - lastUse.time
-        value       = 1.0 - elapsedTime / lastUse.cooldown.toDouble
+        value       = 1.0 - elapsedTime / (lastUse.cooldown.toDouble / player.abilityCount(abilityId))
       } yield value max 0.0).getOrElse(0.0)
 
     }

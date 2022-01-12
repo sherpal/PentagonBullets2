@@ -49,7 +49,7 @@ object GameMaster {
   case class MultipleActionsWrapper(gameActions: List[GameAction], playerName: PlayerName) extends Command
 
   private val serverAction =
-    ManageDeadPlayers ++
+    new ManageDeadPlayers(true) ++
       ManageTickerBuffs ++
       ManageUsedAbilities ++
       ManageGunTurrets ++

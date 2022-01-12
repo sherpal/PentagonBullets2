@@ -176,6 +176,7 @@ final class CastAbilitiesHandler(
         case None     => throw new RuntimeException(s"This ability Id ($abilityId) is not supported yet.")
       }
 
+      println("casting")
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }
 

@@ -12,6 +12,8 @@ trait WithAbilities extends WithPosition {
   /** List of [[gamelogic.abilities.Ability]] that is entity has. */
   def allowedAbilities: List[Ability.AbilityId]
 
+  final def abilityCount(abilityId: Ability.AbilityId): Int = allowedAbilities.count(_ == abilityId)
+
   final def abilities: Set[Ability.AbilityId] = allowedAbilities.toSet
 
   /** Copies this [[WithAbilities]] by changing it after using the ability. This would also involve reduce the value
@@ -60,7 +62,7 @@ trait WithAbilities extends WithPosition {
     Option
       .unless(hasAbility(ability.abilityId))("You don't have that ability")
       .orElse(Option.unless(relevantUsedAbilities.values.filter(_.abilityId == ability.abilityId).forall { ability =>
-        now - ability.time >= ability.cooldown
+        now - ability.time >= ability.cooldown / abilityCount(ability.abilityId)
       })("Ability on cooldown"))
       .orElse(Option.unless(resourceAmount >= ability.cost)(s"Not enough ${ability.cost.resourceType}"))
 

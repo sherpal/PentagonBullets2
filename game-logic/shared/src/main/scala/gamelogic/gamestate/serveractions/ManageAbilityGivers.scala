@@ -14,7 +14,7 @@ object ManageAbilityGivers extends ServerActionFromActionList {
     val abilityGivers = gameState.abilityGivers
 
     abilityGivers.values.flatMap(abilityGiver =>
-      gameState.players.values.find(player => abilityGiver.collides(player, time - player.time)).map { player =>
+      gameState.players.values.find(player => abilityGiver.collides(player, time)).map { player =>
         PlayerTakeAbilityGiver(
           actionId(),
           time,
