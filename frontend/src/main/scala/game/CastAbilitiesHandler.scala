@@ -180,8 +180,12 @@ final class CastAbilitiesHandler(
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }
 
-  userControls.downInputs
-    .collect { case UserInput.DefaultBullets => () }
+  EventStream
+    .periodic(158)
+    .sample(userControls.$pressedUserInput)
+    .filter(_ contains UserInput.DefaultBullets)
+    //userControls.downInputs
+    //.collect { case UserInput.DefaultBullets => () }
     .sample($gameStates, $gameMousePosition)
     .map((gameState, worldMousePos) => (gameState, gameState.playerById(playerId), worldMousePos))
     .collect { case (gameState, Some(me), worldMousePos) => (gameState, me, worldMousePos) }
