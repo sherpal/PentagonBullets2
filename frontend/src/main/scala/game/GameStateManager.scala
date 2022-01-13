@@ -198,25 +198,25 @@ final class GameStateManager(
     val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
 
     maybePlayer match {
-      case Some(me) =>
+      case Some(me) if gameState.isPlaying =>
         val now       = serverTime
         val deltaTime = now - lastTimeStamp
         lastTimeStamp = now.toDouble
 
-        if gameState.isPlaying then {
-          val playerMovement = UserInput.movingDirection(pressedUserInput)
-          val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
+        val playerMovement = UserInput.movingDirection(pressedUserInput)
+        val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
 
-          unconfirmedActions = unconfirmedActions :+ positionAction
-          maybeLastPositionUpdate = Some(positionAction)
+        unconfirmedActions = unconfirmedActions :+ positionAction
+        maybeLastPositionUpdate = Some(positionAction)
 
-          nextGameState()
-        }
-      case None if gameState.started =>
+        nextGameState()
+      case _ if gameState.started =>
         val cameraSize = gameState.mists.values.headOption match {
           case None       => gameState.gameAreaSideLength.toDouble
           case Some(mist) => mist.sideLength * 1.1
         }
+
+        unconfirmedActions = Nil
 
         val widthToHeightRatio = gameDrawer.camera.worldWidth / gameDrawer.camera.worldHeight
 
@@ -226,14 +226,18 @@ final class GameStateManager(
         else
           gameDrawer.camera.worldWidth = cameraSize
           gameDrawer.camera.worldHeight = cameraSize / widthToHeightRatio
-      case None => // nothing to do
+      case None    => // nothing to do
+      case Some(_) => // nothing to do
     }
 
     val now             = serverTime
     val gameStateToDraw = gameStateStrictSignal.now()
     gameDrawer.drawGameState(
       gameStateToDraw,
-      gameStateToDraw.entityByIdAs[Player](playerId).fold(Complex.zero)(_.currentPosition(now)),
+      gameStateToDraw
+        .entityByIdAs[Player](playerId)
+        .filter(_ => !gameStateToDraw.ended)
+        .fold(Complex.zero)(_.currentPosition(now)),
       now
     )
 
