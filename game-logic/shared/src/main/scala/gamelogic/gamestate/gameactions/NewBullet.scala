@@ -57,3 +57,9 @@ final case class NewBullet(
   def setId(newId: GameAction.Id): GameAction = copy(actionId = newId)
 
 }
+
+object NewBullet {
+
+  @inline def bulletPrice: Double = 8.46
+
+}

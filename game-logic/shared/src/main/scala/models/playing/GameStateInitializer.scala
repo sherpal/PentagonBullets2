@@ -11,6 +11,7 @@ import gamelogic.entities.Entity
 import gamelogic.gamestate.gameactions.{CreateGod, PutSimpleTickerBuff, UpdateMist}
 import gamelogic.utils.Time
 import gamelogic.buffs.Buff
+import gamelogic.buffs.resourcebuffs.EnergyFiller
 
 object GameStateInitializer {
 
@@ -60,7 +61,12 @@ object GameStateInitializer {
     val createCenterSquare     = gameArea.createCenterSquare(centerOctagonRadius, ServerSource)
     val createObstaclesActions = createCenterSquare +: gameArea.createGameBoundsBarriers
 
-    val newPlayerActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
+    val playerCreationActions = players.values.zip(RGBColour.coloursForPlayers).toList.map(gameArea.createPlayer(_, _))
+
+    val newPlayerActions = playerCreationActions ++ playerCreationActions.map { newPlayer =>
+      val buff = EnergyFiller(Buff.nextBuffId(), newPlayer.player.id, newPlayer.time, newPlayer.time)
+      PutSimpleTickerBuff(GameAction.newId(), newPlayer.time, buff, ServerSource)
+    }
 
     val gameStateAfterNewPlayers: GameState =
       initialGameState.applyActions(godActions ++ createMists ++ createObstaclesActions ++ newPlayerActions)

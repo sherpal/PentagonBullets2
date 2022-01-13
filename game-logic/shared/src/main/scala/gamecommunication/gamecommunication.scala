@@ -3,6 +3,7 @@ import be.doeraene.physics.shape.{Circle, Polygon, Shape}
 import boopickle.Default.*
 import gamelogic.abilities.*
 import gamelogic.buffs.godsbuffs.{DamageZoneSpawn, HealUnitDealer}
+import gamelogic.buffs.resourcebuffs.EnergyFiller
 import gamelogic.entities.Entity
 import gamelogic.entities.concreteentities.*
 import gamelogic.gamestate.GameAction
@@ -39,6 +40,7 @@ package object gamecommunication {
   given Pickler[SimpleTickerBuff] = compositePickler[SimpleTickerBuff]
     .addConcreteType[HealUnitDealer]
     .addConcreteType[DamageZoneSpawn]
+    .addConcreteType[EnergyFiller]
 
   given Pickler[Ability] = compositePickler[Ability]
     .addConcreteType[ActivateShield]
@@ -73,6 +75,7 @@ package object gamecommunication {
   given Pickler[GameAction] = compositePickler[GameAction]
     .addConcreteType[BulletAmplifierAmplified]
     .addConcreteType[ChangeBulletRadius]
+    .addConcreteType[ChangeRemourceAmount]
     .addConcreteType[CreateGod]
     .addConcreteType[DestroyBarrier]
     .addConcreteType[DestroyBulletAmplifier]

@@ -71,5 +71,6 @@ object Buff {
   val bulletGlue: ResourceIdentifier      = nextId()
   val healUnitDealer: ResourceIdentifier  = nextId()
   val damageZoneSpawn: ResourceIdentifier = nextId()
+  val energyFiller: ResourceIdentifier = nextId()
 
 }

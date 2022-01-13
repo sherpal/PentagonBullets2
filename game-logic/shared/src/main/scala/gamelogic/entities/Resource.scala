@@ -10,6 +10,8 @@ sealed trait Resource {
 object Resource {
 
   case class ResourceAmount(amount: Double, resourceType: Resource) extends PartiallyOrdered[ResourceAmount] {
+    def unary_- : ResourceAmount = copy(amount = -amount)
+
     def +[R1 <: Resource](that: ResourceAmount): ResourceAmount =
       if (this.resourceType == that.resourceType) ResourceAmount(this.amount + that.amount, resourceType)
       else this

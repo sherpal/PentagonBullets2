@@ -13,6 +13,7 @@ import models.playing.UserInput
 import gamelogic.gamestate.gameactions.*
 import gamelogic.utils.IdGeneratorContainer
 import gamelogic.abilities.Ability.*
+import gamelogic.entities.Resource.{Energy, ResourceAmount}
 
 /** Singleton adding the effect of casting abilities.
   */
@@ -176,7 +177,6 @@ final class CastAbilitiesHandler(
         case None     => throw new RuntimeException(s"This ability Id ($abilityId) is not supported yet.")
       }
 
-      println("casting")
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }
 
@@ -185,11 +185,18 @@ final class CastAbilitiesHandler(
     .sample($gameStates, $gameMousePosition)
     .map((gameState, worldMousePos) => (gameState, gameState.playerById(playerId), worldMousePos))
     .collect { case (gameState, Some(me), worldMousePos) => (gameState, me, worldMousePos) }
+    .filter((_, me, _) => me.energy >= NewBullet.bulletPrice)
     .foreach { (gameState: GameState, me: Player, worldMousePos: Complex) =>
       val direction = (worldMousePos - me.pos).normalized
       socketOutWriter.onNext(
         ClientToServer.GameActionWrapper(
           List(
+            ChangeRemourceAmount(
+              GameAction.newId(),
+              serverTime,
+              playerId,
+              ResourceAmount(-NewBullet.bulletPrice, Energy)
+            ),
             NewBullet(
               GameAction.newId(),
               Entity.newId(),
