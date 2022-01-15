@@ -96,7 +96,7 @@ final class ReactiveGUIDrawer(
   val playerFrameGridContainer: ReactiveContainer = new GridContainer(
     GridContainer.Row,
     gameStateUpdates
-      .map(_._1.players.valuesIterator.map(_.id).toList.sorted)
+      .map(gs => (gs._1.players ++ gs._1.deadPlayers).valuesIterator.map(_.id).toList.sorted)
       .toSignal(Nil)
       .split(identity) { case (entityId, _, _) =>
         new PlayerFrame(

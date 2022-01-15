@@ -20,8 +20,6 @@ final case class Controls(
     abilityKeys: List[InputCode]
 ) {
 
-  println(burstBulletsAbilityKey)
-
   lazy val controlMap: Map[InputCode, UserInput] = Map(
     upKey                   -> UserInput.Up,
     downKey                 -> UserInput.Down,
