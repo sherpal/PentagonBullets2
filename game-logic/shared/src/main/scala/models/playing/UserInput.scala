@@ -32,8 +32,13 @@ object UserInput {
     def direction: Complex = -1
   }
 
+  /** Pressed when user wants to shoot bullets. */
   case object DefaultBullets extends UserInput
 
+  /** Pressed together with [[DefaultBullets]] when the user wants to shoot bullets at a higher rate. */
+  case object BurstBullets extends UserInput
+
+  /** Pressed when the user wants to use their [[gamelogic.abilities.ActivateShield]] ability. */
   case object ShieldAbility extends UserInput
 
   /** Represent */

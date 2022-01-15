@@ -14,10 +14,13 @@ final case class Controls(
     leftKey: InputCode,
     rightKey: InputCode,
     defaultBulletAbilityKey: InputCode,
+    burstBulletsAbilityKey: InputCode,
     chosenAbilityKey: InputCode,
     shieldAbilityKey: InputCode,
     abilityKeys: List[InputCode]
 ) {
+
+  println(burstBulletsAbilityKey)
 
   lazy val controlMap: Map[InputCode, UserInput] = Map(
     upKey                   -> UserInput.Up,
@@ -25,6 +28,7 @@ final case class Controls(
     leftKey                 -> UserInput.Left,
     rightKey                -> UserInput.Right,
     defaultBulletAbilityKey -> UserInput.DefaultBullets,
+    burstBulletsAbilityKey  -> UserInput.BurstBullets,
     shieldAbilityKey        -> UserInput.ShieldAbility,
     chosenAbilityKey        -> UserInput.AbilityInput(0)
   ) ++ abilityKeys.zipWithIndex.map { case (code, idx) => code -> UserInput.AbilityInput(idx) }.toMap
@@ -35,6 +39,7 @@ final case class Controls(
       downKey,
       rightKey,
       leftKey,
+      burstBulletsAbilityKey,
       shieldAbilityKey,
       chosenAbilityKey,
       defaultBulletAbilityKey
@@ -104,6 +109,7 @@ object Controls {
       KeyCode("KeyA"),
       KeyCode("KeyD"),
       MouseCode(0),
+      KeyCode("ShiftLeft"),
       MouseCode(2),
       KeyCode("KeyE"),
       (1 to 10).map(_ % 10).map("Digit" + _).map(KeyCode.apply).toList

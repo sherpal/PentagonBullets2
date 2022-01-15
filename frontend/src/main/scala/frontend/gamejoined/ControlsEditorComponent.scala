@@ -48,8 +48,6 @@ object ControlsEditorComponent {
           assigningKeyBus.writer.onNext(None)
         }
 
-        println("coucou")
-
         div(
           zIndex := 7,
           position := "fixed",
@@ -63,10 +61,10 @@ object ControlsEditorComponent {
             onClick.preventDefault.stopPropagation --> Observer.empty
           ),
           onMountCallback { _ =>
-            dom.window.addEventListener("keypress", assignKeyboardCallback)
+            dom.window.addEventListener("keydown", assignKeyboardCallback)
           },
           onUnmountCallback { _ =>
-            dom.window.removeEventListener("keypress", assignKeyboardCallback)
+            dom.window.removeEventListener("keydown", assignKeyboardCallback)
           }
         )
     }
@@ -93,7 +91,8 @@ object ControlsEditorComponent {
             controlSetting("Down", controls.downKey, (cs, c) => cs.copy(downKey = c)),
             controlSetting("Left", controls.leftKey, (cs, c) => cs.copy(leftKey = c)),
             controlSetting("Right", controls.rightKey, (cs, c) => cs.copy(rightKey = c)),
-            controlSetting("Shield", controls.shieldAbilityKey, (cs, c) => cs.copy(shieldAbilityKey = c))
+            controlSetting("Shield", controls.shieldAbilityKey, (cs, c) => cs.copy(shieldAbilityKey = c)),
+            controlSetting("Burst", controls.burstBulletsAbilityKey, (cs, c) => cs.copy(burstBulletsAbilityKey = c))
           )
         },
         children <-- controlsBus.events.map { implicit controls =>

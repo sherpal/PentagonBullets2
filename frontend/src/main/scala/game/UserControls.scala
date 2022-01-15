@@ -20,7 +20,7 @@ final class UserControls(keyboard: Keyboard, mouse: Mouse) {
         upInputs.map(_   -> false)
       )
       .foldLeft(Set.empty[UserInput]) { case (accumulated, (input, isDown)) =>
-        if (isDown) accumulated + input else accumulated - input
+        if isDown then accumulated + input else accumulated - input
       }
 
   def $effectiveMousePosition: EventStream[Complex] = mouse.$effectiveMousePosition

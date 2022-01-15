@@ -30,9 +30,9 @@ final class Keyboard(controls: Controls) {
 
   /** Signal of all currently pressed key codes. */
   val $pressedKeys: Signal[Set[String]] = $keyboardEvents.foldLeft(Set.empty[String]) {
-    case (accumulatedSet, event) if event.`type` == "keyup"    => accumulatedSet - event.code
-    case (accumulatedSet, event) if event.`type` == "keypress" => accumulatedSet + event.code
-    case (s, _)                                                => s // should never happen as we don't register it
+    case (accumulatedSet, event) if event.`type` == "keyup"   => accumulatedSet - event.code
+    case (accumulatedSet, event) if event.`type` == "keydown" => accumulatedSet + event.code
+    case (s, _)                                               => s // should never happen as we don't register it
   }
 
   val downUserInputEvents: EventStream[UserInput] = $keyboardEvents.filter(_.`type` == "keydown")

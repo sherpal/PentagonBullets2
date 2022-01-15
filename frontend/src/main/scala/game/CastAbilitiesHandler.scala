@@ -180,10 +180,30 @@ final class CastAbilitiesHandler(
       maybeAbility.filter(_.isUp(me, serverTime, 1000)).foreach(sendUseAbility)
     }
 
+  case class BulletsAndBurstPressedInfo(bulletIsPressed: Boolean, burstIsPressed: Boolean) {
+    val normalMode = bulletIsPressed && !burstIsPressed
+    val burstMode  = bulletIsPressed && burstIsPressed
+  }
+
+  val bulletsAndBurstPressed = userControls.$pressedUserInput.map(pressedInputs =>
+    BulletsAndBurstPressedInfo(
+      pressedInputs contains UserInput.DefaultBullets,
+      pressedInputs contains UserInput.BurstBullets
+    )
+  )
+
+  val normalBulletRateEvents = EventStream
+    .periodic(166)
+    .sample(bulletsAndBurstPressed)
+    .filter(_.normalMode)
+
+  val burstBulletRateEvents = EventStream
+    .periodic(125)
+    .sample(bulletsAndBurstPressed)
+    .filter(_.burstMode)
+
   EventStream
-    .periodic(158)
-    .sample(userControls.$pressedUserInput)
-    .filter(_ contains UserInput.DefaultBullets)
+    .merge(normalBulletRateEvents, burstBulletRateEvents)
     //userControls.downInputs
     //.collect { case UserInput.DefaultBullets => () }
     .sample($gameStates, $gameMousePosition)
