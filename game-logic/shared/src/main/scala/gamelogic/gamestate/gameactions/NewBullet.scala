@@ -60,6 +60,6 @@ final case class NewBullet(
 
 object NewBullet {
 
-  @inline def bulletPrice: Double = 8.0
+  @inline def bulletPrice: Double = 5.0
 
 }

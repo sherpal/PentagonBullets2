@@ -13,7 +13,6 @@ final class WithBuff(buff: Buff) extends GameStateTransformer {
       )
 
     case buff: PassiveBuff =>
-      println(s"The buff!!! $buff")
       val newBuffMap = gameState.passiveBuffs.getOrElse(buff.bearerId, Map()) + (buff.buffId -> buff)
       gameState.copy(
         newTime = buff.appearanceTime,

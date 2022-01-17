@@ -1,6 +1,7 @@
 package gamelogic.gamestate.serveractions
 
 import gamelogic.buffs.Buff
+import gamelogic.entities.concreteentities.Shield
 import gamelogic.gamestate.gameactions.RemoveBuff
 import gamelogic.gamestate.{ActionGatherer, GameAction}
 import gamelogic.utils.IdGeneratorContainer
@@ -21,8 +22,7 @@ object ManageBuffsToBeRemoved extends ServerActionFromActionList {
       .filter(_.isFinite)
       .filter(buff => startTime - buff.appearanceTime > buff.duration)
       .flatMap { buff =>
-        println(s"buff is removed! $buff")
-        removeBuffAction(idGeneratorContainer.gameActionIdGenerator(), buff) :: buff.endingAction(gameState, startTime)
+        removeBuffAction(actionId(), buff) :: buff.endingAction(gameState, startTime)
       }
 
     removedBuffs

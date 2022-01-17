@@ -100,9 +100,9 @@ final class GameState(
   }
 
   def buffById(entityId: Entity.Id, buffId: Buff.Id): Option[Buff] =
-    tickerBuffs.get(entityId).orElse(passiveBuffs.get(entityId)).flatMap(_.get(buffId))
+    tickerBuffs.get(entityId).flatMap(_.get(buffId)).orElse(passiveBuffs.get(entityId).flatMap(_.get(buffId)))
 
-  def allBuffs: Iterable[Buff] = (passiveBuffs ++ tickerBuffs).values.flatMap(_.values)
+  def allBuffs: Iterable[Buff] = passiveBuffs.values.flatMap(_.values) ++ tickerBuffs.values.flatMap(_.values)
 
   /** Creates a partial function which filters all [[gamelogic.entities.Entity]] of the specified type `T`.
     */

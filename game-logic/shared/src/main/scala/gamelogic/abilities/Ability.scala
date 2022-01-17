@@ -70,16 +70,9 @@ trait Ability {
     gameState.playerById(playerId).toLeft(s"Player with id $playerId is not alive").toOption
 
   def isUp(caster: WithAbilities, now: Long, allowedError: Long = 0): Boolean =
-    {
-      println(caster.allowedAbilities.count(_ == abilityId))
-
-      println(cooldown)
-      caster.relevantUsedAbilities.values
-        .filter(_.abilityId == abilityId)
-        .forall(ability =>
-          (now - ability.time + allowedError) >= cooldown / caster.abilityCount(abilityId)
-        )
-    }
+    caster.relevantUsedAbilities.values
+      .filter(_.abilityId == abilityId)
+      .forall(ability => (now - ability.time + allowedError) >= cooldown / caster.abilityCount(abilityId))
 
   protected def canBeCastAll(gameState: GameState, time: Long)(
       checks: (GameState, Long) => Option[String]*

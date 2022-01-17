@@ -2,7 +2,7 @@ package game.ui.effects
 
 import game.Camera
 import game.ui.effects.GameEffect
-import gamelogic.entities.{Body, Entity, LivingEntity}
+import gamelogic.entities.{Body, Entity, LivingEntity, WithAbilities}
 import gamelogic.gamestate.GameState
 import be.doeraene.physics.Complex
 import typings.pixiJs.PIXI.Texture
@@ -45,6 +45,24 @@ final class SmallLifeBars(
   def computeValue(living: LivingEntity): Double =
     living.lifeTotal / living.maxLife
 
+  private val resourceBackground = new Sprite(backgroundTexture)
+  private val resourceBar        = new Sprite(barTexture)
+  private val resourceMask       = new Graphics
+  resourceBar.mask = resourceMask
+  //barContainer.addChild(resourceBackground)
+  resourceBackground.width = width
+  resourceBackground.height = 3.0
+  resourceBackground.y = height
+  resourceBackground.tint = 0
+  barContainer.addChild(resourceBar)
+  resourceBar.width = width
+  resourceBar.height = 3.0
+  resourceBar.y = height
+  barContainer.addChild(resourceMask)
+
+  def computeResourceValue(withResource: WithAbilities): Double =
+    withResource.resourceAmount.amount / withResource.maxResourceAmount
+
   def destroy(): Unit = barContainer.destroy()
 
   def update(currentTime: Long, gameState: GameState): Unit =
@@ -63,6 +81,17 @@ final class SmallLifeBars(
         .clear()
         .beginFill(0xc0c0c0)
         .drawRect(0, 0, bar.width * lifePercentage, bar.height)
+
+      Some(entity).collect { case withAbilities: WithAbilities => withAbilities }.foreach {
+        (entityWithAbilities: WithAbilities) =>
+          val resourcePercentage = computeResourceValue(entityWithAbilities)
+          resourceBar.tint = entityWithAbilities.resourceType.colour.intColour
+
+          resourceMask
+            .clear()
+            .beginFill(0xc0c0c0)
+            .drawRect(0, resourceBar.y, resourceBar.width * resourcePercentage, resourceBar.height)
+      }
 
       val entityPosition = entity.currentPosition(currentTime)
       val verticalOffset = (entity.shape.radius + height).i

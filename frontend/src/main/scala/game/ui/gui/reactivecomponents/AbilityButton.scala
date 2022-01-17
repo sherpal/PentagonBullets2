@@ -9,6 +9,7 @@ import gamelogic.entities.Entity
 import gamelogic.gamestate.GameState
 import typings.pixiJs.PIXI.Texture
 import utils.misc.RGBAColour
+import utils.misc.RGBColour
 
 final class AbilityButton(
     abilityId: Ability.AbilityId,
@@ -39,7 +40,8 @@ final class AbilityButton(
       interactive := true,
       onClick.stopPropagation.mapTo(abilityId) --> clickWriter,
       width  <-- dimensions.map(_._1),
-      height <-- dimensions.map(_._2)
+      height <-- dimensions.map(_._2),
+      tint   <-- remainingCooldownSignal.map(_ == 0.0).map(if _ then RGBColour.green else RGBColour.white)
     ),
     new StatusBar(
       remainingCooldownSignal,
@@ -51,8 +53,8 @@ final class AbilityButton(
     ): ReactiveContainer,
     pixiSprite(
       abilityFocusTexture,
-      width <-- dimensions.map(_._1),
-      height <-- dimensions.map(_._2),
+      width   <-- dimensions.map(_._1),
+      height  <-- dimensions.map(_._2),
       visible <-- remainingCooldownSignal.map(_ == 0.0)
     )
   )
