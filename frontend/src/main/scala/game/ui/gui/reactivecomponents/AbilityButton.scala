@@ -34,6 +34,8 @@ final class AbilityButton(
     }
     .toSignal(0.0)
 
+  val isUpSignal: Signal[Boolean] = remainingCooldownSignal.map(_ == 0.0)
+
   container.amend(
     pixiSprite(
       texture,
@@ -41,11 +43,11 @@ final class AbilityButton(
       onClick.stopPropagation.mapTo(abilityId) --> clickWriter,
       width  <-- dimensions.map(_._1),
       height <-- dimensions.map(_._2),
-      tint   <-- remainingCooldownSignal.map(_ == 0.0).map(if _ then RGBColour.green else RGBColour.white)
+      tint   <-- isUpSignal.map(if _ then RGBColour.green else RGBColour.white)
     ),
     new StatusBar(
       remainingCooldownSignal,
-      Val(RGBAColour(0, 0, 0, 0.4)),
+      Val(RGBAColour.blackTransparency(0.4)),
       Val(true),
       overlayTexture,
       dimensions,
@@ -55,7 +57,7 @@ final class AbilityButton(
       abilityFocusTexture,
       width   <-- dimensions.map(_._1),
       height  <-- dimensions.map(_._2),
-      visible <-- remainingCooldownSignal.map(_ == 0.0)
+      visible <-- isUpSignal
     )
   )
 

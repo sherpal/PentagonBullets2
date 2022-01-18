@@ -9,3 +9,9 @@ final case class RGBAColour(red: Int, green: Int, blue: Int, alpha: Double) exte
   def asRGBAColour: RGBAColour = this
 
 }
+
+object RGBAColour {
+
+  def blackTransparency(alpha: Double): Colour = RGBAColour(0, 0, 0, alpha)
+
+}
