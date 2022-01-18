@@ -163,7 +163,7 @@ class GameArea(val width: Int = 1000, val height: Int = 800) {
 
 object GameArea {
 
-  def sizeFromNbrPlayers(nbrPlayers: Int): Int = 1000 * (nbrPlayers - 1)
+  def sizeFromNbrPlayers(nbrPlayers: Int): Int = 1000 + (1000 * math.sqrt(nbrPlayers - 2)).toInt
 
   def apply(nbrPlayers: Int): GameArea = {
     val size = sizeFromNbrPlayers(nbrPlayers)
