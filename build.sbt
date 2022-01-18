@@ -8,6 +8,12 @@ val dottyVersion = "3.1.0"
 name := "PentagonBullets2"
 version := "1.0.0"
 
+GlobalLoader.addOnLoad()
+
+val isWindows = System.getProperty("os.name").startsWith("Windows")
+val npmCmd    = if (isWindows) "npm.cmd" else "npm"
+val npxCmd    = if (isWindows) "npx.cmd" else "npx"
+
 val commonSettings = List(
   scalaVersion := dottyVersion,
   libraryDependencies += "org.scalameta" %%% "munit" % "0.7.26" % Test,
@@ -83,7 +89,7 @@ lazy val frontend = project
       "tailwindcss"
     ),
     externalNpm := {
-      scala.sys.process.Process("npm.cmd", baseDirectory.value).!
+      scala.sys.process.Process(npmCmd :: "-v" :: Nil, baseDirectory.value).!
       baseDirectory.value
     },
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
@@ -109,11 +115,11 @@ compileCypress := {
 lazy val snowpackBuild = taskKey[Unit]("Build frontend using snowpack")
 
 snowpackBuild := {
-  val installResult = Process("npm.cmd" :: "install" :: Nil, baseDirectory.value / "frontend").!
+  val installResult = Process(npmCmd :: "install" :: Nil, baseDirectory.value / "frontend").!
   if (installResult != 0) {
     throw new RuntimeException("Failure when installing packages.")
   }
-  val buildResult = Process("npx.cmd" :: "snowpack" :: "build" :: Nil, baseDirectory.value / "frontend").!
+  val buildResult = Process(npxCmd :: "snowpack" :: "build" :: Nil, baseDirectory.value / "frontend").!
   if (buildResult != 0) {
     throw new RuntimeException("Failure when building snowpack")
   }
