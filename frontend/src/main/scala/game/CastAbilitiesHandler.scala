@@ -204,8 +204,6 @@ final class CastAbilitiesHandler(
 
   EventStream
     .merge(normalBulletRateEvents, burstBulletRateEvents)
-    //userControls.downInputs
-    //.collect { case UserInput.DefaultBullets => () }
     .sample($gameStates, $gameMousePosition)
     .map((gameState, worldMousePos) => (gameState, gameState.playerById(playerId), worldMousePos))
     .collect { case (gameState, Some(me), worldMousePos) => (gameState, me, worldMousePos) }

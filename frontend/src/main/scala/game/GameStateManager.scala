@@ -197,12 +197,12 @@ final class GameStateManager(
 
     val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
 
+    val now       = serverTime
+    val deltaTime = now - lastTimeStamp
+    lastTimeStamp = now.toDouble
+
     maybePlayer match {
       case Some(me) if gameState.isPlaying =>
-        val now       = serverTime
-        val deltaTime = now - lastTimeStamp
-        lastTimeStamp = now.toDouble
-
         val playerMovement = UserInput.movingDirection(pressedUserInput)
         val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
 
@@ -230,15 +230,15 @@ final class GameStateManager(
       case Some(_) => // nothing to do
     }
 
-    val now             = serverTime
+    val nowAfter        = serverTime
     val gameStateToDraw = gameStateStrictSignal.now()
     gameDrawer.drawGameState(
       gameStateToDraw,
       gameStateToDraw
         .entityByIdAs[Player](playerId)
         .filter(_ => !gameStateToDraw.ended)
-        .fold(Complex.zero)(_.currentPosition(now)),
-      now
+        .fold(Complex.zero)(_.currentPosition(nowAfter)),
+      nowAfter
     )
 
     effectsManager.update(now, gameStateToDraw)
