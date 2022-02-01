@@ -6,6 +6,8 @@ data
 temp
 null
 
+chromedriver.exe
+
 .DS_Store
 .idea
 

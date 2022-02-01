@@ -35,7 +35,7 @@ sbt buildApplication
 Run with
 
 ```
-java -Dconfig.resource=prod.conf -jar server/target/scala-3.1.0/server-assembly-0.1.0-SNAPSHOT.jar
+java "-Dconfig.resource=prod.conf" -jar server/target/scala-3.1.0/server-assembly-0.1.0-SNAPSHOT.jar
 ```
 
 Go to `localhost:9000` in two different browsers...

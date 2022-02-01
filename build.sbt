@@ -58,6 +58,18 @@ lazy val `server` = project
   )
   .dependsOn(`game-logic`.jvm)
 
+lazy val ia = project
+  .in(file("./ia"))
+  .settings(commonSettings)
+  .settings(BackendDependencies.addDependencies())
+  .settings(
+    libraryDependencies ++= List(
+      "org.seleniumhq.selenium" % "selenium-java" % "4.1.1",
+      "io.github.bonigarcia" % "webdrivermanager" % "5.0.3"
+    )
+  )
+  .dependsOn(`game-logic`.jvm)
+
 lazy val cypress = project
   .in(file("./cypress"))
   .enablePlugins(ScalaJSPlugin)
