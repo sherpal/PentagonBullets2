@@ -1,14 +1,14 @@
 import be.doeraene.physics.Complex
-import be.doeraene.physics.shape.{Circle, Polygon, Shape}
+import be.doeraene.physics.shape.{Circle, ConvexPolygon, Polygon, Shape}
 import boopickle.Default.*
 import gamelogic.abilities.*
 import gamelogic.buffs.godsbuffs.{DamageZoneSpawn, HealUnitDealer}
 import gamelogic.buffs.resourcebuffs.EnergyFiller
-import gamelogic.entities.Entity
+import gamelogic.entities.{Entity, EntityCastingInfo}
 import gamelogic.entities.concreteentities.*
-import gamelogic.gamestate.GameAction
+import gamelogic.gamestate.{GameAction, GameState}
 import gamelogic.gamestate.gameactions.*
-import gamelogic.buffs.{Buff, SimplePassiveBuff, SimpleTickerBuff}
+import gamelogic.buffs.{Buff, PassiveBuff, SimplePassiveBuff, SimpleTickerBuff, TickerBuff}
 
 package object gamecommunication {
 
@@ -32,6 +32,7 @@ package object gamecommunication {
   given Pickler[Shape] = compositePickler[Shape]
     .addConcreteType[Circle]
     .addConcreteType[Polygon]
+    .addConcreteType[ConvexPolygon]
 
   given Pickler[SimplePassiveBuff] = compositePickler[SimplePassiveBuff]
     .addConcreteType[Shield]
@@ -61,6 +62,7 @@ package object gamecommunication {
     .addConcreteType[BulletAmplifier]
     .addConcreteType[Bullet]
     .addConcreteType[DamageZone]
+    .addConcreteType[God]
     .addConcreteType[GunTurret]
     .addConcreteType[HealUnit]
     .addConcreteType[HealingZone]
@@ -127,5 +129,48 @@ package object gamecommunication {
     .addConcreteType[UpdateMist]
     .addConcreteType[UpdatePlayerPos]
     .addConcreteType[UseAbilityAction]
+
+  given Pickler[GameState] = summon[Pickler[
+    (
+        Long,
+        Option[Long],
+        Option[Long],
+        Polygon,
+        Map[Entity.Id, EntityCastingInfo],
+        Map[Entity.Id, Map[Buff.Id, SimplePassiveBuff]],
+        Map[Entity.Id, Map[Buff.Id, SimpleTickerBuff]],
+        Map[Entity.Id, Entity],
+        Map[Entity.Id, Player]
+    )
+  ]].xmap {
+    case (time, startTime, endTime, gameBounds, castingEntityInfo, passiveBuff, tickerBuff, entities, deadPlayers) =>
+      new GameState(
+        time,
+        startTime,
+        endTime,
+        gameBounds,
+        castingEntityInfo,
+        passiveBuff,
+        tickerBuff,
+        entities,
+        deadPlayers
+      )
+  }(gameState =>
+    (
+      gameState.time,
+      gameState.startTime,
+      gameState.endTime,
+      gameState.gameBounds,
+      gameState.castingEntityInfo,
+      gameState.passiveBuffs.map((entityId, buffs) =>
+        entityId -> buffs.collect { case (key, buff: SimplePassiveBuff) => key -> buff }
+      ),
+      gameState.tickerBuffs.map((entityId: Entity.Id, buffs: Map[Buff.Id, TickerBuff]) =>
+        entityId -> buffs.collect { case (key, buff: SimpleTickerBuff) => key -> buff }
+      ),
+      gameState.entities,
+      gameState.deadPlayers
+    )
+  )
 
 }
