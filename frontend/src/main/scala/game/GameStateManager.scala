@@ -191,60 +191,61 @@ final class GameStateManager(
     )
   }
 
-  private val ticker = (_: Double) => {
-    nextGameState() // need for last unconfirmed actions to kick in
-    val info = gameLoopInfoSignal.now()
+  private val ticker = (_: Double) =>
+    if serverTime - lastTimeStamp > 14 then {
+      nextGameState() // need for last unconfirmed actions to kick in
+      val info = gameLoopInfoSignal.now()
 
-    val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
+      val (gameState: GameState, maybePlayer, mousePos, pressedUserInput) = info
 
-    val now       = serverTime
-    val deltaTime = now - lastTimeStamp
-    lastTimeStamp = now.toDouble
+      val now       = serverTime
+      val deltaTime = now - lastTimeStamp
+      lastTimeStamp = now.toDouble
 
-    maybePlayer match {
-      case Some(me) if gameState.isPlaying =>
-        val playerMovement = UserInput.movingDirection(pressedUserInput)
-        val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
+      maybePlayer match {
+        case Some(me) if gameState.isPlaying =>
+          val playerMovement = UserInput.movingDirection(pressedUserInput)
+          val positionAction = movePlayer(gameState, now, deltaTime, mousePos, me, playerMovement)
 
-        unconfirmedActions = unconfirmedActions :+ positionAction
-        maybeLastPositionUpdate = Some(positionAction)
+          unconfirmedActions = unconfirmedActions :+ positionAction
+          maybeLastPositionUpdate = Some(positionAction)
 
-        nextGameState()
-      case _ if gameState.started =>
-        val cameraSize = gameState.mists.values.headOption match {
-          case None       => gameState.gameAreaSideLength.toDouble
-          case Some(mist) => mist.sideLength * 1.1
-        }
+          nextGameState()
+        case _ if gameState.started =>
+          val cameraSize = gameState.mists.values.headOption match {
+            case None       => gameState.gameAreaSideLength.toDouble
+            case Some(mist) => mist.sideLength * 1.1
+          }
 
-        unconfirmedActions = Nil
+          unconfirmedActions = Nil
 
-        val widthToHeightRatio = gameDrawer.camera.worldWidth / gameDrawer.camera.worldHeight
+          val widthToHeightRatio = gameDrawer.camera.worldWidth / gameDrawer.camera.worldHeight
 
-        if widthToHeightRatio > 1 then
-          gameDrawer.camera.worldWidth = cameraSize * widthToHeightRatio
-          gameDrawer.camera.worldHeight = cameraSize
-        else
-          gameDrawer.camera.worldWidth = cameraSize
-          gameDrawer.camera.worldHeight = cameraSize / widthToHeightRatio
-      case None    => // nothing to do
-      case Some(_) => // nothing to do
+          if widthToHeightRatio > 1 then
+            gameDrawer.camera.worldWidth = cameraSize * widthToHeightRatio
+            gameDrawer.camera.worldHeight = cameraSize
+          else
+            gameDrawer.camera.worldWidth = cameraSize
+            gameDrawer.camera.worldHeight = cameraSize / widthToHeightRatio
+        case None    => // nothing to do
+        case Some(_) => // nothing to do
+      }
+
+      val nowAfter        = serverTime
+      val gameStateToDraw = gameStateStrictSignal.now()
+      gameDrawer.drawGameState(
+        gameStateToDraw,
+        gameStateToDraw
+          .entityByIdAs[Player](playerId)
+          .filter(_ => !gameStateToDraw.ended)
+          .fold(Complex.zero)(_.currentPosition(nowAfter)),
+        nowAfter
+      )
+
+      effectsManager.update(now, gameStateToDraw)
+
+      gameStateUpdatesBus.writer.onNext((gameStateToDraw, now))
     }
-
-    val nowAfter        = serverTime
-    val gameStateToDraw = gameStateStrictSignal.now()
-    gameDrawer.drawGameState(
-      gameStateToDraw,
-      gameStateToDraw
-        .entityByIdAs[Player](playerId)
-        .filter(_ => !gameStateToDraw.ended)
-        .fold(Complex.zero)(_.currentPosition(nowAfter)),
-      nowAfter
-    )
-
-    effectsManager.update(now, gameStateToDraw)
-
-    gameStateUpdatesBus.writer.onNext((gameStateToDraw, now))
-  }
 
   application.ticker.add(ticker)
 

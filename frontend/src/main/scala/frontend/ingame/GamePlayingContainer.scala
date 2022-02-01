@@ -1,6 +1,7 @@
 package frontend.ingame
 
 import assets.Asset
+import boopickle.Default.Pickle
 import com.raquo.laminar.api.L.*
 import game.Keyboard
 import game.Mouse
@@ -15,10 +16,16 @@ import typings.pixiJs.PIXI.LoaderResource
 import typings.pixiJs.mod.Application
 import utils.domutils.ScalablyTypedScalaJSDomInterop.given
 import utils.laminarzio.onMountZIOWithContext
+import utils.laminarzio.Implicits._
 import utils.websocket.Socket
-import zio.duration._
+import zio.duration.*
 import zio.{UIO, ZIO}
-import ziojs.Implicits._
+import ziojs.Implicits.*
+import gamecommunication.given_Pickler_GameState
+import org.scalajs.dom.UIEvent
+import org.scalajs.dom.raw.{Blob, FileReader}
+
+import scala.scalajs.js.typedarray.TypedArrayBufferOps.*
 
 object GamePlayingContainer {
   private val gameSceneSizeRatio = 1200 / 800.0
@@ -32,6 +39,11 @@ object GamePlayingContainer {
       messageWriter: Observer[ClientToServer],
       resources: PartialFunction[Asset, LoaderResource]
   ): HtmlElement = {
+
+    val gameStateBus: EventBus[GameState] = new EventBus
+
+    val gameStateSignal = gameStateBus.events.startWith(GameState.initialGameState)
+
     def addWindowResizeEventListener(stage: ReactiveStage) =
       for {
         window      <- UIO(dom.window)
@@ -68,7 +80,7 @@ object GamePlayingContainer {
       userControls <- UIO(new UserControls(new Keyboard(controls), new Mouse(application.view, controls)))
       stage        <- UIO(new ReactiveStage(application))
       _            <- addWindowResizeEventListener(stage)
-      _ <- UIO(
+      gameStateManager <- UIO(
         new GameStateManager(
           stage,
           GameState.initialGameState,
@@ -81,10 +93,34 @@ object GamePlayingContainer {
           resources
         )
       )
+      _ <- ZIO.effectTotal(gameStateManager.$gameStates.foreach(gs => gameStateBus.writer.onNext(gs)))
       _ <- ZIO.effectTotal(container.appendChild(application.view))
       _ <- ZIO.effectTotal(messageWriter.onNext(ClientToServer.ReadyToStart(playerName)))
     } yield ()
 
-    div(onMountZIOWithContext(ctx => mountEffect(ctx.thisNode.ref)(ctx.owner)))
+    div(
+      onMountZIOWithContext(ctx => mountEffect(ctx.thisNode.ref)(ctx.owner)),
+      div(
+        display := "none",
+        className := "gameStateSer",
+        child <-- gameStateSignal.changes
+          .throttle(33)
+          .map(gameState => Pickle.intoBytes(gameState).arrayBuffer())
+          .flatMap { buffer =>
+            ZIO.effectAsync[Any, Nothing, String] { callback =>
+              val blob   = new Blob(scalajs.js.Array(buffer))
+              val reader = new FileReader()
+
+              reader.onload = { (_: UIEvent) =>
+                callback(UIO(reader.result.asInstanceOf[String]))
+              }
+
+              reader.readAsDataURL(blob)
+            }
+          }
+          .map(dataUrl => dataUrl.drop("data:application/octet-stream;base64,".length))
+          .map(base64String => div(base64String))
+      )
+    )
   }
 }
