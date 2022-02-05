@@ -27,7 +27,11 @@ final class Mouse(canvas: html.Canvas, controls: Controls) {
   private val mouseClickBus: EventBus[MouseEvent] = new EventBus
   val $mouseClicks: EventStream[MouseEvent]       = mouseClickBus.events
 
-  private val clickHandler: js.Function1[MouseEvent, _] = mouseClickBus.writer.onNext _
+  private val clickHandler: js.Function1[MouseEvent, _] = { (event: MouseEvent) =>
+    if (event.isTrusted) {
+      mouseClickBus.writer.onNext(event)
+    }
+  }
   private val contextMenuHandler: js.Function1[MouseEvent, _] = { (event: MouseEvent) =>
     mouseClickBus.writer.onNext(event)
     event.preventDefault()
@@ -39,8 +43,16 @@ final class Mouse(canvas: html.Canvas, controls: Controls) {
   private val mouseDownEventBus = new EventBus[MouseEvent]
   private val mouseUpEventBus   = new EventBus[MouseEvent]
 
-  private val mouseDownHandler: js.Function1[MouseEvent, _] = mouseDownEventBus.writer.onNext _
-  private val mouseUpHandler: js.Function1[MouseEvent, _]   = mouseUpEventBus.writer.onNext _
+  private val mouseDownHandler: js.Function1[MouseEvent, _] = { (event: MouseEvent) =>
+    if (event.isTrusted) {
+      mouseDownEventBus.writer.onNext(event)
+    }
+  }
+  private val mouseUpHandler: js.Function1[MouseEvent, _] = { (event: MouseEvent) =>
+    if (event.isTrusted) {
+      mouseUpEventBus.writer.onNext(event)
+    }
+  }
 
   canvas.addEventListener("mouseup", mouseUpHandler)
   canvas.addEventListener("mousedown", mouseDownHandler)
